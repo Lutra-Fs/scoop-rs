@@ -12,7 +12,7 @@ This repository is a Rust reimplementation of Scoop. The bar is:
 
 - `crates/scoop-core`: core domain types and implementation details.
 - `crates/scoop-cli`: the `scoop` binary and CLI surface.
-- Upstream PowerShell reference source for parity work: `D:/Applications/Scoop/apps/scoop/current`.
+- Upstream PowerShell reference source for parity work: `<upstream-scoop-root>/apps/scoop/current`, where `<upstream-scoop-root>` follows upstream installer root resolution (`$ScoopDir`, then `$env:SCOOP`, then the default user install root `~/scoop` / `$env:USERPROFILE\scoop`).
 
 Keep CLI orchestration in `scoop-cli`. Put compatibility logic, manifest handling, downloads, hashing, filesystem layout, and future install/update semantics in `scoop-core`.
 

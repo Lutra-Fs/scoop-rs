@@ -27,4 +27,4 @@ Rust reimplementation of Scoop with a hard target of full interoperability and m
 
 ## Upstream reference
 
-Use `D:/Applications/Scoop/apps/scoop/current` as the PowerShell source-of-truth when porting behavior.
+Use `<upstream-scoop-root>/apps/scoop/current` as the PowerShell parity reference when porting behavior. Resolve `<upstream-scoop-root>` with the same root-selection order used by the upstream installer: explicit installer path, then `$env:SCOOP`, then the default user install root `~/scoop` / `$env:USERPROFILE\scoop`.

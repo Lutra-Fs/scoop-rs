@@ -9,16 +9,16 @@ Scope:
 - Current scoop-rs behavior differences belong in [`BEHAVIOR_DELTAS.md`](/E:/scoop-rs/BEHAVIOR_DELTAS.md).
 - Future install backlog items belong in [`THINGS_TO_ADDRESS.md`](/E:/scoop-rs/THINGS_TO_ADDRESS.md).
 
-Primary upstream references:
+Primary upstream references under `<upstream-scoop-root>/apps/scoop/current`, with `<upstream-scoop-root>` resolved by the upstream installer from the explicit installer path, then `$env:SCOOP`, then the default user install root `~/scoop` / `$env:USERPROFILE\scoop`:
 
-- `D:/Applications/Scoop/apps/scoop/current/libexec/scoop-install.ps1`
-- `D:/Applications/Scoop/apps/scoop/current/lib/install.ps1`
-- `D:/Applications/Scoop/apps/scoop/current/lib/manifest.ps1`
-- `D:/Applications/Scoop/apps/scoop/current/lib/download.ps1`
-- `D:/Applications/Scoop/apps/scoop/current/lib/decompress.ps1`
-- `D:/Applications/Scoop/apps/scoop/current/lib/depends.ps1`
-- `D:/Applications/Scoop/apps/scoop/current/lib/shortcuts.ps1`
-- `D:/Applications/Scoop/apps/scoop/current/lib/psmodules.ps1`
+- `<upstream-scoop-root>/apps/scoop/current/libexec/scoop-install.ps1`
+- `<upstream-scoop-root>/apps/scoop/current/lib/install.ps1`
+- `<upstream-scoop-root>/apps/scoop/current/lib/manifest.ps1`
+- `<upstream-scoop-root>/apps/scoop/current/lib/download.ps1`
+- `<upstream-scoop-root>/apps/scoop/current/lib/decompress.ps1`
+- `<upstream-scoop-root>/apps/scoop/current/lib/depends.ps1`
+- `<upstream-scoop-root>/apps/scoop/current/lib/shortcuts.ps1`
+- `<upstream-scoop-root>/apps/scoop/current/lib/psmodules.ps1`
 
 ## CLI Contract
 
