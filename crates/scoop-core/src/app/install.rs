@@ -11,6 +11,7 @@ use crate::{
     compat::catalog::{ResolvedManifest, render_manifest_json},
     domain::install_context::{HookType, InstallContext, InstallContextPaths},
     infra::{
+        cache::canonical_cache_path,
         environment::{
             EnvScope, add_path, get_env_var, remove_path, scoop_path_env_var, set_env_var,
         },
@@ -18,6 +19,7 @@ use crate::{
         http::build_blocking_http_client,
         powershell::run_install_hook,
         shortcuts::create_shortcut,
+        versioned_manifest::resolve_versioned_manifest as resolve_historical_manifest,
         windows::security::is_elevated,
     },
 };
@@ -692,12 +694,15 @@ fn resolve_versioned_manifest_in_bucket(
         if !candidate.is_file() {
             continue;
         }
-        if let Some(manifest) = resolve_versioned_manifest_at_path(&candidate, requested_version)? {
+        let current = load_manifest_json(&candidate)?;
+        if let Some(resolved) =
+            resolve_historical_manifest(config, app, &candidate, &current, requested_version)?
+        {
             return Ok(Some(ResolvedManifest {
                 app: app.to_owned(),
                 bucket: Some(bucket.to_owned()),
                 path: candidate,
-                manifest,
+                manifest: resolved.manifest,
             }));
         }
     }
@@ -714,60 +719,6 @@ fn install_bucket_manifest_candidates(
         bucket_root.join("bucket").join(format!("{app}.json")),
         bucket_root.join("deprecated").join(format!("{app}.json")),
     ]
-}
-
-fn resolve_versioned_manifest_at_path(
-    path: &Utf8Path,
-    requested_version: &str,
-) -> anyhow::Result<Option<Value>> {
-    let current = load_manifest_json(path)?;
-    if manifest_version(&current) == Some(requested_version) {
-        return Ok(Some(current));
-    }
-
-    let Some(repo_root) = path
-        .ancestors()
-        .find(|candidate| candidate.join(".git").exists())
-    else {
-        return Ok(None);
-    };
-    let relative = path
-        .strip_prefix(repo_root)
-        .map_err(|_| anyhow::anyhow!("manifest should be inside its bucket repository"))?;
-    let output = Command::new("git")
-        .current_dir(repo_root)
-        .args(["log", "--format=%H", "--", relative.as_str()])
-        .output()
-        .with_context(|| format!("failed to read git history for {}", path))?;
-    if !output.status.success() {
-        return Ok(None);
-    }
-    for revision in String::from_utf8_lossy(&output.stdout).lines() {
-        if revision.trim().is_empty() {
-            continue;
-        }
-        let spec = format!(
-            "{}:{}",
-            revision.trim(),
-            relative.as_str().replace('\\', "/")
-        );
-        let output = Command::new("git")
-            .current_dir(repo_root)
-            .args(["show", &spec])
-            .output()
-            .with_context(|| format!("failed to load historical manifest {}", path))?;
-        if !output.status.success() {
-            continue;
-        }
-        let manifest: Value = match serde_json::from_slice(&output.stdout) {
-            Ok(manifest) => manifest,
-            Err(_) => continue,
-        };
-        if manifest_version(&manifest) == Some(requested_version) {
-            return Ok(Some(manifest));
-        }
-    }
-    Ok(None)
 }
 
 pub(crate) fn load_manifest_json(path: &Utf8Path) -> anyhow::Result<Value> {
@@ -1386,9 +1337,7 @@ fn download_payloads(
     let mut payloads = Vec::new();
     for (index, url) in plan.urls.iter().enumerate() {
         let filename = download_filename(url)?;
-        let cache_path = config
-            .cache_dir()
-            .join(format!("{}#{}#{filename}", plan.app, plan.version));
+        let cache_path = canonical_cache_path(config, plan.app, plan.version, url)?;
         let destination = plan.version_dir.join(&filename);
 
         if use_cache {

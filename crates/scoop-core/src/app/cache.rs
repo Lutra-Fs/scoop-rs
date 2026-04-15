@@ -4,7 +4,7 @@ use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
 use regex::RegexBuilder;
 
-use crate::RuntimeConfig;
+use crate::{RuntimeConfig, infra::cache::parse_cache_entry_name};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CacheEntry {
@@ -91,9 +91,9 @@ fn cache_matcher(apps: &[String]) -> anyhow::Result<Option<regex::Regex>> {
 }
 
 fn parse_cache_entry(path: Utf8PathBuf, file_name: String, length: u64) -> Option<CacheEntry> {
-    let mut parts = file_name.splitn(3, '#');
-    let name = parts.next()?.to_owned();
-    let version = parts.next()?.to_owned();
+    let (name, version, _) = parse_cache_entry_name(&file_name)?;
+    let name = name.to_owned();
+    let version = version.to_owned();
     Some(CacheEntry {
         file_name,
         name,

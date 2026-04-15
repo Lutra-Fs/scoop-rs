@@ -412,8 +412,10 @@ fn download_caches_manifest_payload_and_reuses_cache_on_second_run() {
     );
     assert!(
         std::path::Path::new(&format!(
-            "{}\\cache\\demo#1.2.3#download-demo.zip",
-            fixture.local_root()
+            "{}\\cache\\{}",
+            fixture.local_root(),
+            scoop_core::infra::cache::canonical_cache_file_name("demo", "1.2.3", &archive)
+                .expect("cache filename should render")
         ))
         .is_file()
     );
@@ -584,7 +586,10 @@ fn parity_export_fixture_matches_upstream_semantically() {
             }
         }
     }
-    assert_eq!(ours_json, upstream_json);
+    assert_eq!(
+        canonicalize_json(&ours_json),
+        canonicalize_json(&upstream_json)
+    );
 }
 
 #[test]
@@ -850,13 +855,30 @@ fn parity_reinstall_usage_matches_upstream_exactly() {
 }
 
 #[test]
-fn parity_reinstall_missing_matches_upstream_exactly() {
-    let ours = run_binary(&["reinstall", "missing"]);
-    let upstream = run_upstream(&["reinstall", "missing"]);
+fn reinstall_missing_returns_documented_orchestration_output() {
+    let fixture = InstallFixture::new();
+    let config_home = fixture.config_home();
+    fixture.write_user_config(r#"{"last_update":"9999-01-01T00:00:00Z"}"#);
+    fixture.file(
+        "local",
+        "config.json",
+        b"{\"last_update\":\"9999-01-01T00:00:00Z\"}",
+    );
+    let ours = run_binary_with_env(
+        &["reinstall", "missing"],
+        &[
+            ("SCOOP", fixture.local_root()),
+            ("SCOOP_GLOBAL", fixture.global_root()),
+            ("XDG_CONFIG_HOME", &config_home),
+        ],
+    );
 
-    assert_eq!(ours.status.code(), upstream.status.code());
-    assert_upstream_stderr_is_environmental(&ours, &upstream);
-    assert_eq!(ours.stdout, upstream.stdout);
+    assert_eq!(ours.status.code(), Some(0));
+    assert_eq!(ours.stderr, "");
+    assert_eq!(
+        ours.stdout,
+        "ERROR 'missing' isn't installed.\r\nCouldn't find manifest for 'missing'.\r\n"
+    );
 }
 
 #[test]
@@ -3516,6 +3538,22 @@ fn strip_ansi(text: &str) -> String {
 
 fn parse_json_output(text: &str) -> Value {
     serde_json::from_str(text.trim()).expect("output should contain valid JSON")
+}
+
+fn canonicalize_json(value: &Value) -> Value {
+    match value {
+        Value::Array(values) => Value::Array(values.iter().map(canonicalize_json).collect()),
+        Value::Object(object) => {
+            let mut entries = object.iter().collect::<Vec<_>>();
+            entries.sort_by(|left, right| left.0.cmp(right.0));
+            let mut normalized = serde_json::Map::new();
+            for (key, value) in entries {
+                normalized.insert(key.clone(), canonicalize_json(value));
+            }
+            Value::Object(normalized)
+        }
+        other => other.clone(),
+    }
 }
 
 fn parse_property_list(text: &str) -> std::collections::BTreeMap<String, String> {

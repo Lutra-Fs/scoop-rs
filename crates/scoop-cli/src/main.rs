@@ -32,9 +32,12 @@ use scoop_core::app::shim::{
 use scoop_core::app::status::{StatusRow, collect_status};
 use scoop_core::app::uninstall::{UninstallOptions, UninstallOutcome};
 use scoop_core::app::update::{UpdateOptions, UpdateOutcome};
+use scoop_core::app::virustotal::{
+    EXIT_NO_API_KEY, VirusTotalOptions, check_apps as check_virustotal_apps,
+};
 use scoop_core::infra::http::build_blocking_http_client;
 use scoop_core::infra::installed::format_updated_time;
-use scoop_core::{resolve_manifest, resolve_prefix, resolve_which};
+use scoop_core::{resolve_prefix, resolve_which};
 use serde_json::{Map, Value};
 use std::{
     io::Write,
@@ -1167,6 +1170,7 @@ fn run_virustotal(args: &[String]) -> anyhow::Result<Response> {
     let mut no_depends = false;
     let mut no_update_scoop = false;
     let mut passthru = false;
+    let mut scan = false;
     let mut apps = Vec::new();
     for arg in args {
         match arg.as_str() {
@@ -1174,7 +1178,7 @@ fn run_virustotal(args: &[String]) -> anyhow::Result<Response> {
             "-n" | "--no-depends" => no_depends = true,
             "-u" | "--no-update-scoop" => no_update_scoop = true,
             "-p" | "--passthru" => passthru = true,
-            "-s" | "--scan" => {}
+            "-s" | "--scan" => scan = true,
             value if value.starts_with('-') => {
                 return Ok(Response {
                     code: 1,
@@ -1232,38 +1236,38 @@ fn run_virustotal(args: &[String]) -> anyhow::Result<Response> {
         .filter(|value| !value.is_empty());
     if api_key.is_none() {
         return Ok(Response {
-            code: 16,
+            code: EXIT_NO_API_KEY,
             output: String::from(
                 "VirusTotal API key is not configured\r\n  You could get one from https://www.virustotal.com/gui/my-apikey and set with\r\n  scoop config virustotal_api_key <API key>\r\n",
             ),
         });
     }
 
-    let mut reports = Vec::<Value>::new();
-    for app in apps {
-        let Some(manifest) = resolve_manifest(&config, &app)? else {
-            output.push_str(&format!("Couldn't find manifest for '{app}'.{EOL}"));
-            continue;
-        };
-        reports.push(serde_json::json!({
-            "App.Name": app,
-            "Manifest.Path": manifest.path,
-            "Status": "not-implemented"
-        }));
-        output.push_str(&format!(
-            "WARN  VirusTotal lookups beyond manifest validation are not implemented yet for '{}'.{EOL}",
-            manifest.app
-        ));
+    let run = check_virustotal_apps(
+        &config,
+        &apps,
+        api_key.as_deref().expect("api key already validated"),
+        &VirusTotalOptions {
+            scan,
+            base_url: std::env::var("SCOOP_RS_VIRUSTOTAL_BASE_URL").ok(),
+        },
+    )?;
+    for line in &run.lines {
+        output.push_str(line);
+        output.push_str(EOL);
     }
-    if passthru && !reports.is_empty() {
+    if passthru && !run.reports.is_empty() {
         output.push_str(&format!(
             "{}{EOL}",
-            serde_json::to_string_pretty(&reports)
+            serde_json::to_string_pretty(&run.reports)
                 .context("failed to serialize virustotal reports")?
                 .replace('\n', "\r\n")
         ));
     }
-    Ok(Response { code: 0, output })
+    Ok(Response {
+        code: run.exit_code,
+        output,
+    })
 }
 
 fn run_reinstall(args: &[String]) -> anyhow::Result<Response> {
@@ -1355,15 +1359,26 @@ fn run_reinstall(args: &[String]) -> anyhow::Result<Response> {
     }
     install_args.extend(apps);
 
-    let mut output = match run_uninstall(&uninstall_args) {
-        Ok(response) => response.output,
-        Err(error) => format!("ERROR {error}{EOL}"),
+    let uninstall_response = match run_uninstall(&uninstall_args) {
+        Ok(response) => response,
+        Err(error) => Response {
+            code: 1,
+            output: format!("ERROR {error}{EOL}"),
+        },
     };
-    output.push_str(&match run_install(&install_args) {
-        Ok(response) => response.output,
-        Err(error) => format!("ERROR {error}{EOL}"),
-    });
-    Ok(Response { code: 0, output })
+    let install_response = match run_install(&install_args) {
+        Ok(response) => response,
+        Err(error) => Response {
+            code: 1,
+            output: format!("ERROR {error}{EOL}"),
+        },
+    };
+    let mut output = uninstall_response.output;
+    output.push_str(&install_response.output);
+    Ok(Response {
+        code: install_response.code,
+        output,
+    })
 }
 
 fn run_install(args: &[String]) -> anyhow::Result<Response> {

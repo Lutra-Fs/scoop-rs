@@ -10,6 +10,7 @@ use crate::{
         install::{current_version, installed_versions, is_admin},
         uninstall::unlink_persist_data,
     },
+    infra::cache::parse_cache_entry_name,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -181,11 +182,7 @@ fn remove_outdated_cache_files(
             continue;
         }
         let file_name = entry.file_name().to_string_lossy().into_owned();
-        let mut parts = file_name.splitn(3, '#');
-        let Some(candidate_app) = parts.next() else {
-            continue;
-        };
-        let Some(version) = parts.next() else {
+        let Some((candidate_app, version, _)) = parse_cache_entry_name(&file_name) else {
             continue;
         };
         if !candidate_app.eq_ignore_ascii_case(app) || version == current_version {

@@ -220,7 +220,7 @@ pub const COMMANDS: &[CommandSpec] = &[
         summary: "Look for app's hash or url on virustotal.com",
         usage: "Usage: scoop virustotal <app>",
         help: Some(
-            "Usage:\n  scoop virustotal [* | app1 app2 ...] [options]\n\nOptions:\n  -a, --all             Check all installed apps\n  -n, --no-depends      Do not expand dependencies\n  -u, --no-update-scoop Don't self-update Scoop first\n  -p, --passthru        Emit raw JSON reports when available",
+            "Usage:\n  scoop virustotal [* | app1 app2 ...] [options]\n\nOptions:\n  -a, --all             Check all installed apps\n  -n, --no-depends      Do not expand dependencies\n  -s, --scan            Submit the URL when VirusTotal has no existing report\n  -u, --no-update-scoop Don't self-update Scoop first\n  -p, --passthru        Emit raw JSON reports when available",
         ),
         implemented: true,
     },

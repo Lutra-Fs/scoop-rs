@@ -1,4 +1,8 @@
-use std::{process::Command, time::SystemTime};
+use std::{
+    fs,
+    process::Command,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 use anyhow::{Context, bail};
 use camino::Utf8Path;
@@ -47,6 +51,9 @@ pub fn current_branch(repopath: &Utf8Path) -> anyhow::Result<String> {
 }
 
 pub fn origin_url(repopath: &Utf8Path) -> anyhow::Result<String> {
+    if let Some(remote) = read_origin_url_from_config(repopath)? {
+        return Ok(remote);
+    }
     let remote = git_stdout(repopath, &["config", "--get", "remote.origin.url"])?;
     let remote = remote.trim();
     if remote.is_empty() {
@@ -130,6 +137,9 @@ pub fn ls_remote(remote_url: &str) -> anyhow::Result<()> {
 }
 
 pub fn latest_commit_time(repopath: &Utf8Path) -> anyhow::Result<SystemTime> {
+    if let Some(updated) = read_latest_commit_time_from_logs(repopath)? {
+        return Ok(updated);
+    }
     let updated = git_stdout(repopath, &["log", "--format=%aI", "-n", "1"])?;
     let updated = updated.trim();
     if updated.is_empty() {
@@ -233,6 +243,87 @@ fn git_output(repopath: &Utf8Path, args: &[&str]) -> anyhow::Result<std::process
         .args(args)
         .output()
         .with_context(|| format!("failed to run git in {}", repopath))
+}
+
+fn read_origin_url_from_config(repopath: &Utf8Path) -> anyhow::Result<Option<String>> {
+    let Some(git_dir) = resolve_git_dir(repopath)? else {
+        return Ok(None);
+    };
+    let config_path = git_dir.join("config");
+    if !config_path.is_file() {
+        return Ok(None);
+    }
+    let source = fs::read_to_string(&config_path)
+        .with_context(|| format!("failed to read git config {}", config_path))?;
+    let mut in_origin = false;
+    for line in source.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            in_origin = trimmed == r#"[remote "origin"]"#;
+            continue;
+        }
+        if !in_origin {
+            continue;
+        }
+        if let Some((key, value)) = trimmed.split_once('=')
+            && key.trim() == "url"
+        {
+            let value = value.trim();
+            if !value.is_empty() {
+                return Ok(Some(value.replace("\\\\", "\\")));
+            }
+        }
+    }
+    Ok(None)
+}
+
+fn read_latest_commit_time_from_logs(repopath: &Utf8Path) -> anyhow::Result<Option<SystemTime>> {
+    let Some(git_dir) = resolve_git_dir(repopath)? else {
+        return Ok(None);
+    };
+    let logs_head = git_dir.join("logs").join("HEAD");
+    if !logs_head.is_file() {
+        return Ok(None);
+    }
+    let source = fs::read_to_string(&logs_head)
+        .with_context(|| format!("failed to read git reflog {}", logs_head))?;
+    let Some(line) = source.lines().last() else {
+        return Ok(None);
+    };
+    let Some((_, tail)) = line.split_once('>') else {
+        return Ok(None);
+    };
+    let timestamp = tail
+        .split_whitespace()
+        .next()
+        .and_then(|value| value.parse::<u64>().ok());
+    Ok(timestamp.map(|seconds| UNIX_EPOCH + Duration::from_secs(seconds)))
+}
+
+fn resolve_git_dir(repopath: &Utf8Path) -> anyhow::Result<Option<camino::Utf8PathBuf>> {
+    let git_path = repopath.join(".git");
+    if git_path.is_dir() {
+        return Ok(Some(git_path));
+    }
+    if !git_path.is_file() {
+        return Ok(None);
+    }
+    let source = fs::read_to_string(&git_path)
+        .with_context(|| format!("failed to read gitdir file {}", git_path))?;
+    let Some(gitdir) = source.strip_prefix("gitdir:") else {
+        return Ok(None);
+    };
+    let gitdir = gitdir.trim();
+    let resolved = Utf8Path::new(gitdir);
+    if resolved.is_absolute() {
+        return Ok(Some(resolved.to_path_buf()));
+    }
+    Ok(Some(
+        git_path
+            .parent()
+            .expect(".git file should have a parent")
+            .join(gitdir),
+    ))
 }
 
 #[cfg(test)]

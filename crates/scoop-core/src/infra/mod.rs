@@ -1,4 +1,5 @@
 pub mod buckets;
+pub mod cache;
 pub mod config;
 pub mod environment;
 pub mod git;
@@ -9,4 +10,5 @@ pub mod powershell;
 pub mod profiling;
 pub mod shortcuts;
 pub mod sqlite_cache;
+pub mod versioned_manifest;
 pub mod windows;

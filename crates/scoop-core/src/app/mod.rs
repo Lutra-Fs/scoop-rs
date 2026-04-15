@@ -18,3 +18,4 @@ pub mod shim;
 pub mod status;
 pub mod uninstall;
 pub mod update;
+pub mod virustotal;

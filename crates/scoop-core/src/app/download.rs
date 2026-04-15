@@ -9,7 +9,7 @@ use crate::{
         parse_app_reference, remove_existing_path_if_exists,
         resolve_manifest_reference_for_install, validate_hash,
     },
-    infra::http::build_blocking_http_client,
+    infra::{cache::canonical_cache_path, http::build_blocking_http_client},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -203,9 +203,7 @@ fn cache_payloads(
     let mut files = Vec::new();
     for (index, url) in plan.urls.iter().enumerate() {
         let file_name = download_filename(url)?;
-        let path = config
-            .cache_dir()
-            .join(format!("{}#{}#{file_name}", plan.app, plan.version));
+        let path = canonical_cache_path(config, plan.app, plan.version, url)?;
         let loaded_from_cache = options.use_cache && path.is_file();
         if !loaded_from_cache {
             fetch_to_path(client, url, &path)?;
