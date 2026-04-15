@@ -23,20 +23,27 @@ Scope:
 
 ## Bucket, git, and update flow
 
-- [#3894](https://github.com/ScoopInstaller/Scoop/issues/3894) - Previous-version install should have a git-history-backed fallback, not just ad hoc manifest generation.
 - [#6587](https://github.com/ScoopInstaller/Scoop/issues/6587) - Buckets should work on non-main branches when the remote layout says they should.
 - [#6594](https://github.com/ScoopInstaller/Scoop/issues/6594), [#6296](https://github.com/ScoopInstaller/Scoop/issues/6296), and [#6510](https://github.com/ScoopInstaller/Scoop/issues/6510) - `status` and bucket freshness checks need to survive missing or restricted git metadata without turning stable commands into noisy failures.
 - [#6573](https://github.com/ScoopInstaller/Scoop/issues/6573) - `scoop list` should not become slow just because a deprecated bucket directory does not exist.
 - [#6568](https://github.com/ScoopInstaller/Scoop/issues/6568) - Installing a specific app version from a custom bucket needs to work as a first-class path.
 - [#6628](https://github.com/ScoopInstaller/Scoop/issues/6628) - Packages that customize other packages need a clear policy for preserving their changes across updates.
-- Self-update now follows a versioned binary path instead of a git checkout path; command-layer `scoop` behavior is complete for this cycle (`HOLD_UPDATE_UNTIL`, changelog rendering, and versioned install + `current` activation). Installer/updater external bootstrap scripts remain responsible for first-install layout setup and locked/plain `apps/<app-name>/current` running-binary replacement per [`docs/bootstrap-updater.md`](/E:/scoop-rs/docs/bootstrap-updater.md).
+- Self-update now follows a versioned binary path instead of a git checkout path; remaining work is the bootstrap/updater activation mechanism for a live `scoop-rs.exe`, root-entry continuity, and first-install layout normalization per [`docs/bootstrap-updater.md`](/E:/scoop-rs/docs/bootstrap-updater.md).
 
 ## Install and lifecycle flow
 
-- [#6568](https://github.com/ScoopInstaller/Scoop/issues/6568) and [#3894](https://github.com/ScoopInstaller/Scoop/issues/3894) - `install` now has a typed version-resolution path for bucket-backed `app@version` via git history; the remaining gap is direct manifest-source `@version` installs and upstream-style autoupdate manifest generation when git history is unavailable.
+- [#6568](https://github.com/ScoopInstaller/Scoop/issues/6568) - `install` and `download` now share bucket-backed `app@version` resolution through a persistent version index plus autoupdate synthesis. Remaining work here is direct manifest-source `@version` handling, not bucket-backed history resolution.
 - [#6413](https://github.com/ScoopInstaller/Scoop/issues/6413), [#6338](https://github.com/ScoopInstaller/Scoop/issues/6338), and [#5472](https://github.com/ScoopInstaller/Scoop/issues/5472) - `install` download planning should unify cache reuse, retries, and duplicate-download avoidance because these fail together in the real workflow.
 - [#6611](https://github.com/ScoopInstaller/Scoop/issues/6611), [#6248](https://github.com/ScoopInstaller/Scoop/issues/6248), and [#6179](https://github.com/ScoopInstaller/Scoop/issues/6179) - install-time extraction and persist linking now have fixture coverage for extract-dir/extract-to plus file and directory persist cases, but archive edge cases with symlinks and more exotic formats still need explicit tests.
 - [#6632](https://github.com/ScoopInstaller/Scoop/issues/6632), [#6243](https://github.com/ScoopInstaller/Scoop/issues/6243), and [#6529](https://github.com/ScoopInstaller/Scoop/issues/6529) - install activation side effects now have command-level coverage for shims, shortcuts, environment mutation, PowerShell modules, and failed-install repair; remaining work is broader parity for uninstall/reset interactions and exact progress output.
+
+## Bootstrap and self-update activation
+
+- `scoop-rs` self-update needs a chosen activation path for a live engine process. The documented design set is stable launcher, script stub transition layer, dedicated helper, deferred next-run activation, and service-based activation. The selection criteria are security surface, recovery model, root-entry continuity, and support for both junction and `no_junction` layouts.
+- Upstream `install.ps1` bootstraps into a live `apps/scoop/current` tree. `scoop-rs` needs an explicit migration path from that bootstrap shape into versioned payload directories plus an activation record or `current` link model.
+- Root-entry updates need their own bounded lifecycle. The open decision is whether installer/repair refreshes a stable launcher, whether an A/B launcher slot is worth the extra complexity, and how that policy interacts with portable installs.
+- Activation metadata needs a durable typed format with path-bounded validation, staged-version identity, interruption recovery, and rollback semantics.
+- Direct execution of `apps/scoop/<version>/scoop-rs.exe` needs a defined contract so self-update behavior stays coherent even when the caller bypasses the eventual root entrypoint.
 ## Shim, path, and filesystem layout
 
 - [#6611](https://github.com/ScoopInstaller/Scoop/issues/6611) - Archives that contain symlinks or junctions should unpack in a way that preserves the intended filesystem shape.
@@ -66,7 +73,6 @@ Scope:
 - [#6413](https://github.com/ScoopInstaller/Scoop/issues/6413) and [#6338](https://github.com/ScoopInstaller/Scoop/issues/6338) - Duplicate downloads and false-success download prompts are regression traps that should be covered by fixture tests.
 - [#6498](https://github.com/ScoopInstaller/Scoop/issues/6498) - Bucket tests can become pathological when a commit touches many files, so any file-walking rewrite should be benchmarked.
 - [#6566](https://github.com/ScoopInstaller/Scoop/issues/6566) - Old-version retention and compression is a useful cleanup benchmark because it exercises both filesystem throughput and archive handling.
-- `export -c` is currently a performance regression on this workstation (latest benchmark: upstream about 3x faster than scoop-rs). The command currently pays too much for installed-app and bucket metadata collection and needs profiling before Phase 1 can be called performance-clean.
 
 ## Working note
 

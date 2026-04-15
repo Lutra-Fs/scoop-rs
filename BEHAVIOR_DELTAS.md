@@ -11,111 +11,24 @@ Scope:
 - Do not put future work, plans, or general caution items here unless they describe a present user-visible gap.
 - Do not duplicate backlog summaries from `THINGS_TO_ADDRESS.md`.
 
-## Record Format
+## Current Deltas
 
-- `Command`: affected command or subsystem.
-- `Status`: `intentional`, `known-gap`, or `environmental`.
-- `Why`: short explanation of the difference.
-- `Test handling`: how parity is asserted today.
-
-## Current Entries
-
-- `Command`: `list`
-  `Status`: `intentional`
-  `Why`: invalid regex input returns one actionable CLI error instead of upstream's repeated PowerShell error spam.
-  `Test handling`: fixture test asserts the Rust-side error contract; parity tests only cover stable successful/no-match cases.
-
-- `Command`: `cat`
-  `Status`: `intentional`
-  `Why`: when `cat_style` is configured but `bat` is unavailable or fails, `scoop-rs` falls back to plain pretty JSON instead of surfacing a shell-execution failure.
-  `Test handling`: fixture tests verify `bat` invocation when available; plain JSON parity remains covered against upstream.
-
-- `Command`: `search`
-  `Status`: `intentional`
-  `Why`: invalid regex diagnostics are normalized to a shorter Rust-side message instead of PowerShell's full regex parser text.
-  `Test handling`: fixture tests assert the Rust-side contract; parity tests cover stable successful paths.
-
-- `Command`: `search`
-  `Status`: `intentional`
-  `Why`: when `USE_SQLITE_CACHE` is enabled and `scoop.db` is missing, empty, or corrupt, `scoop-rs` rebuilds it on demand from local bucket manifests instead of requiring a separate cache-population step.
-  `Test handling`: core cache tests cover initial build and missing-database rebuild; CLI tests cover sqlite-mode search semantics.
-
-- `Command`: `search`
-  `Status`: `intentional`
-  `Why`: sqlite-cache mode uses case-insensitive literal substring matching for remote known-bucket lookup, instead of upstream's raw regex interpolation into the GitHub tree filter. Local sqlite-cache results still follow upstream-style partial matching against `name`, `binary`, and `shortcut`.
-  `Test handling`: parity tests cover stable local sqlite-cache output; remote-bucket tests cover the Rust-side contract separately.
-
-- `Command`: `status`
-  `Status`: `intentional`
-  `Why`: network-failure handling is intentionally compact and routed through output levels; when fetch cannot be checked, `status` reports a single warning line and continues with a success exit code.
-  `Test handling`: fixture tests assert network-failure warning output; local contract tests still assert table output for `status -l`.
-
-- `Command`: `download`
-  `Status`: `known-gap`
-  `Why`: `download app@version` currently reuses scoop-rs versioned-manifest resolution and git-history lookup, but does not yet synthesize arbitrary historical manifests through upstream's `autoupdate` generation path. Versions absent from bucket history may therefore fail where upstream can still generate a temporary manifest.
-  `Test handling`: CLI tests cover usage, missing-manifest parity, and local fixture downloads; no parity assertion is made yet for upstream-generated historical manifests.
-
-- `Command`: `export`
-  `Status`: `known-gap`
-  `Why`: exported `Updated` timestamps are semantically aligned with upstream but still normalized in parity tests because upstream's object serialization can differ in sub-second values across fixture paths.
-  `Test handling`: CLI tests compare stable export fields and normalize `Updated` before semantic parity assertions.
-
-- `Command`: `import`
-  `Status`: `intentional`
-  `Why`: missing-path handling is normalized to a direct scoop-rs usage error instead of upstream PowerShell parameter-binding stderr.
-  `Test handling`: parity tests cover stable invalid-JSON behavior; fixture tests cover successful config/bucket/app/hold import flows.
-
-- `Command`: `cache` / `download`
-  `Status`: `known-gap`
-  `Why`: cached payload filenames currently follow scoop-rs's simpler `app#version#leafname` layout instead of upstream Scoop's URL-derived `cache_path` naming. `download` reuses this shared cache layout, so cache-hit success-path parity is only asserted against the Rust-side contract today.
-  `Test handling`: cache and download fixture tests assert the current layout and cache reuse behavior; parity tests are limited to stable usage and missing-manifest paths.
-
-- `Command`: `install`
-  `Status`: `intentional`
-  `Why`: `install` now covers multi-app planning, manifest path/URL installs, direct manifest-source `@version` validation, bucket git-history `app@version`, dependency expansion, helper dependency planning, nightly version stamping, installer execution, hooks, shims, shortcuts, PowerShell modules, environment mutation, persist linking, failed-install purge, and extract-dir/extract-to handling.
-  `Test handling`: fixture tests cover install side effects, nightly behavior, URL/path manifests, extract-dir/extract-to, dependency ordering, failed-install repair, suggestions, and shim argument substitution. Parity tests cover usage, missing manifests, and already-installed output.
-
-- `Command`: `install`
-  `Status`: `intentional`
-  `Why`: output for install is now mapped to explicit levels (`WARN`, `INFO`, `VERBOSE`) and can be filtered by default `--quiet`/`--verbose` flags. Core progress and actionable lines are in `INFO`, while intermediate side effects (for example shim creation) are `VERBOSE`.
-  `Test handling`: command-level tests still assert side effects and behavior on disk; CLI tests assert stable install outcome lines and known missing-manifest/already-installed cases.
-
-- `Command`: `install`
-  `Status`: `intentional`
-  `Why`: when link creation for `apps/<app>/current` is unavailable, `scoop-rs` falls back to copying the version directory into `current` so installs remain usable without shelling out for junction creation.
-  `Test handling`: fixture tests assert the observable `current` directory contents, not the exact reparse-point type.
-
-- `Command`: `upstream parity harness`
-  `Status`: `environmental`
-  `Why`: on this machine, upstream Scoop emits unrelated config-access noise on stderr because `C:\Users\lutra\.config\scoop\config.json` is denied. That stderr is not a command contract we intend to reproduce.
-  `Test handling`: parity tests normalize stderr by allowing that exact environmental failure while still comparing stable stdout behavior.
-
-- `Command`: `uninstall`
-  `Status`: `intentional`
-  `Why`: success output is condensed to one summary line per app and then filtered by output levels; running-process failures stay as error-level output and still surface under `--quiet`.
-  `Test handling`: CLI tests cover success, purge, running-process skip, and `--quiet` filtering behavior; core tests cover install-then-uninstall round-trip and not-installed paths.
-
-- `Command`: `update`
-  `Status`: `known-gap`
-  `Why`: `update` with no arguments now syncs git buckets and self-updates `scoop-rs` through the normal manifest install pipeline: a newer `scoop` manifest is installed into a versioned directory and then activated by switching `apps/<app-name>/current`. Lifecycle output is now level-mapped (`WARN`/`INFO`/`VERBOSE`) with `--quiet`/`--verbose` support; the remaining known gap is external installer/updater ownership of running-binary replacement when the active `current` path is non-switchable.
-  `Test handling`: fixture tests cover no-arg self-update, explicit `update scoop`, install-triggered self-update, already-latest, and running-process skip behavior.
-
-- `Command`: `reset`
-  `Status`: `intentional`
-  `Why`: `reset` follows the same lifecycle substrate as install/uninstall and output is filtered by output levels (`--quiet` hides the INFO summary, error paths remain visible).
-  `Test handling`: reset reuses shared install/uninstall primitives, and CLI tests cover shim restoration and `--quiet` behavior.
-
-- `Command`: `reinstall`
-  `Status`: `intentional`
-  `Why`: upstream `reinstall` is a shim alias that loops raw arguments through `scoop uninstall` and `scoop install` separately. `scoop-rs` implements it as explicit CLI orchestration with shared option parsing and then reuses the existing uninstall/install command handlers. Stable usage and missing-app output match upstream, but odd alias edge cases from raw per-argument looping are intentionally not reproduced.
-  `Test handling`: CLI tests cover install-on-missing behavior plus exact parity for usage and missing-app output.
-
-- `Command`: `shim`
-  `Status`: `intentional`
-  `Why`: `shim alter` is implemented as a deterministic next-alternative switch instead of upstream's interactive choice prompt, so the command stays testable and non-interactive inside scoop-rs.
-  `Test handling`: CLI tests cover exact parity for stable usage errors and fixture round-trips for add/list/info/rm; core tests cover deterministic `alter` switching.
-
-- `Command`: `virustotal`
-  `Status`: `known-gap`
-  `Why`: scoop-rs currently implements argument handling, dependency expansion, API-key enforcement, manifest validation, and passthru stubs, but does not yet perform real VirusTotal hash/url API queries or submissions.
-  `Test handling`: CLI tests cover exact usage parity plus the Rust-side missing-API-key contract; no parity assertion is made yet for live lookup paths.
+| Command | Behavior | Upstream Scoop | scoop-rs | Status | Test handling / rationale |
+| --- | --- | --- | --- | --- | --- |
+| `list` | Invalid regex diagnostics | Repeats PowerShell regex/parser noise | Returns one actionable CLI error | `intentional` | Fixture test asserts the Rust-side contract; parity tests cover stable success and no-match paths |
+| `cat` | `bat` fallback | Surfaces shell-execution failure when configured `bat` is unavailable | Falls back to plain pretty JSON | `intentional` | Fixture tests verify `bat` invocation when available; JSON parity remains covered |
+| `search` | Invalid regex diagnostics | Emits full PowerShell regex parser text | Emits a shorter normalized error | `intentional` | Fixture tests assert the Rust-side contract; parity tests cover stable successful paths |
+| `search` | SQLite cache bootstrap | Requires separate cache population | Rebuilds `scoop.db` on demand when missing, empty, or corrupt | `intentional` | Core cache tests cover initial build and rebuild; CLI tests cover sqlite-mode search semantics |
+| `search` | Remote known-bucket matching in SQLite mode | Interpolates raw regex into the upstream GitHub tree filter | Uses case-insensitive literal substring matching for remote bucket names; local sqlite results still follow upstream-style partial matching | `intentional` | Parity tests cover stable local sqlite output; remote-bucket tests cover the Rust-side contract |
+| `status` | Network-failure reporting | Can emit broader script-shaped fetch noise | Emits one compact warning and keeps a success exit code | `intentional` | Fixture tests assert warning output; `status -l` table behavior still has parity coverage |
+| `import` | Missing-path handling | Surfaces PowerShell parameter-binding noise | Returns a direct scoop-rs usage error | `intentional` | Parity tests cover stable invalid-JSON behavior; fixture tests cover successful import flows |
+| `cache` / `download` / `cleanup --cache` | Cache filename layout | Reads legacy `app#version#underscored-url`, otherwise writes/uses `app#version#sha7.ext` | Reads and writes only canonical `app#version#sha7.ext` | `intentional` | Core tests cover canonical naming and cache parsing; CLI tests cover cache reuse and cleanup. Legacy cache reuse is deliberately dropped instead of carrying upstream migration debt |
+| `export` | JSON rendering contract | PowerShell object serialization decides key order and timestamp formatting | Preserves the same top-level shape and field meanings (`apps`, `buckets`, optional `config`) but uses Rust JSON serialization and format-compatible comparisons | `intentional` | CLI parity tests canonicalize object order and normalize `Updated`; the accepted bar is format compatibility and better performance, not byte-for-byte serializer parity |
+| `install` | Output shaping | Script output is not level-structured | Maps output to explicit `WARN` / `INFO` / `VERBOSE` levels and filters with `--quiet` / `--verbose` | `intentional` | Fixture tests assert side effects and stable outcome lines; parity tests cover usage, missing manifests, and already-installed output |
+| `install` | `apps/<app>/current` activation fallback | Relies on link creation semantics | Falls back to copying the version directory when link creation is unavailable | `intentional` | Fixture tests assert observable `current` contents, not the exact reparse-point type |
+| `uninstall` | Success output | More verbose script-shaped success output | Emits one condensed summary line per app; error-level output still survives `--quiet` | `intentional` | CLI tests cover success, purge, running-process skip, and quiet-mode behavior |
+| `reset` | Output shaping | Script output is not level-structured | Reuses the lifecycle substrate and filters output through explicit levels | `intentional` | CLI tests cover shim restoration and `--quiet` behavior |
+| `reinstall` | Command implementation and missing-app exit behavior | Alias-style loop over raw arguments; missing-app behavior depends on upstream alias/environment interaction and commonly exits non-zero | Explicit CLI orchestration over shared uninstall/install handlers; the documented missing-app contract is stable stdout with exit code `0` | `intentional` | CLI tests cover usage parity, install-on-missing behavior, and the documented missing-app orchestration contract |
+| `shim` | `shim alter` interaction model | Interactive choice prompt | Deterministic next-alternative switch | `intentional` | CLI tests cover stable usage errors and round-trips for add/list/info/rm; core tests cover deterministic `alter` switching |
+| `update` | `scoop` live self-update activation | PowerShell script files can refresh in place during `update_scoop` because the running process is `pwsh.exe` | `scoop-rs` stages versioned payloads through Rust install/update flows; final activation of a live `scoop-rs.exe` remains a future bootstrap/updater mechanism documented in [`docs/bootstrap-updater.md`](/E:/scoop-rs/docs/bootstrap-updater.md) | `known-gap` | Fixture tests cover no-arg self-update, explicit `update scoop`, already-latest, and running-process skip behavior; the remaining gap is the process-external activation path |
+| Upstream parity harness | Local machine stderr noise | On this machine, upstream emits unrelated config-access noise for `C:\Users\lutra\.config\scoop\config.json` | scoop-rs does not reproduce it | `environmental` | Parity tests normalize that exact upstream stderr so stdout contracts remain comparable |

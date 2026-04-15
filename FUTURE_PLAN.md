@@ -12,31 +12,30 @@ This is the canonical long-horizon migration plan for turning `scoop-rs` into th
 
 ## Current Baseline
 
-- Implemented commands: `help`, `cat`, `info`, `install`, `list`, `prefix`, `reset`, `search`, `status`, `uninstall`, `update`, `which`.
-- `scoop` self-update now follows a versioned manifest install pipeline and activates via `current` by command-layer logic.
+- Implemented commands: `bucket`, `cache`, `cat`, `cleanup`, `config`, `depends`, `download`, `export`, `help`, `hold`, `import`, `info`, `install`, `list`, `prefix`, `reinstall`, `reset`, `search`, `shim`, `status`, `unhold`, `uninstall`, `update`, `virustotal`, `which`.
+- `scoop` self-update now follows a versioned manifest install pipeline and stages activation intent in-repo.
 - Lifecycle parity work at command-layer is complete for behavior-contract intent.
-- Command-layer boundary work is complete in-repo: self-update for `scoop` itself is handled in Rust through versioned install + pointer switch; runtime binary replacement for locked or non-switchable active directories is handled separately via the external installer/updater contract in [`docs/bootstrap-updater.md`](/E:/scoop-rs/docs/bootstrap-updater.md).
-- Remaining gaps are mainly installer-side bootstrap responsibilities and intentionally scoped lifecycle output behavior differences.
+- Command-layer boundary work is complete in-repo: self-update for `scoop` itself is handled in Rust through versioned install and staged activation intent; final activation for locked or non-switchable active directories is handled separately via the bootstrap/updater contract in [`docs/bootstrap-updater.md`](/E:/scoop-rs/docs/bootstrap-updater.md).
+- Phase 1 is complete-for-sign-off in-repo. Remaining work is Phase 2+ parity sweep, installer/bootstrap responsibilities, and broader performance hardening.
 
 ## Migration Phases
 
 ### Phase 1: Missing Core Commands
 
 - Goal: close the biggest command-surface gaps after core lifecycle and bootstrap work.
-- Deliverables, in priority order:
-  - `bucket`
-  - `config`
-  - `cleanup`
-  - `cache`
-  - `download`
-  - `hold` / `unhold`
-  - then lower-priority commands such as `depends`, `export`, `import`, `shim`, `virustotal`, `reinstall`
+- Status:
+  - complete-for-sign-off
+  - command-surface target is implemented
+  - command-level tests, parity coverage, benchmark entrypoints, and explicit accepted deltas now exist for the Phase 1 commands
+- Deliverables:
+  - completed: `bucket`, `config`, `cleanup`, `cache`, `download`, `hold`, `unhold`, `depends`, `export`, `import`, `shim`, `virustotal`, `reinstall`
 - Out of scope:
   - deep performance tuning not required to make a command usable
   - experimental features not present in upstream Scoop
 - Exit criteria:
   - each new command has command-level tests, stable parity coverage where practical, and a benchmark entrypoint
   - behavior deltas are documented immediately when parity is intentionally incomplete
+  - Phase 1 is signed off once the remaining user-visible deltas for those commands are reduced to explicitly accepted low-impact items. This condition is now met.
 
 ### Phase 2: Manifest and Edge-Case Parity Sweep
 
@@ -72,13 +71,14 @@ This is the canonical long-horizon migration plan for turning `scoop-rs` into th
 
 ### Phase 1 details
 
-- Implement commands in the prioritized order above unless a dependency forces a small reorder.
+- Phase 1 is complete-for-sign-off.
 - For each command:
   - finish parser behavior
   - implement the command with typed APIs in `scoop-core`
   - add fixture tests and stable parity tests
   - add or update benchmark coverage
 - Do not mark a command complete until tests and benchmark entrypoints exist.
+- The remaining accepted differences are now tracked as explicit deltas in [`BEHAVIOR_DELTAS.md`](/E:/scoop-rs/BEHAVIOR_DELTAS.md); they are no longer treated as unresolved Phase 1 leftovers.
 
 ### Phase 2 details
 

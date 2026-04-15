@@ -20,19 +20,22 @@ This is the canonical compact engineering memory for the current `scoop-rs` stat
 - PowerShell remains only for compatibility surfaces such as hooks, installers, and uninstallers.
 - `unsafe` is allowed only in narrow infra/platform boundaries behind safe typed APIs.
 - Documentation boundaries are explicit; do not duplicate the same fact across plan, memory, backlog, and delta files.
-- Command-layer self-update is split from executable replacement: command code handles version planning and activation only; installer/updater owns locked running-binary replacement under the contract in `docs/bootstrap-updater.md`.
+- Command-layer self-update owns version planning, staging, and activation intent.
+- The final activation mechanism for a live `scoop-rs.exe` remains an open bootstrap/updater design space documented in `docs/bootstrap-updater.md`.
 
 ## Current User-Visible State
 
-- Implemented commands: `help`, `cat`, `info`, `install`, `list`, `prefix`, `reset`, `search`, `status`, `uninstall`, `update`, `which`.
+- Implemented commands: `bucket`, `cache`, `cat`, `cleanup`, `config`, `depends`, `download`, `export`, `help`, `hold`, `import`, `info`, `install`, `list`, `prefix`, `reinstall`, `reset`, `search`, `shim`, `status`, `unhold`, `uninstall`, `update`, `virustotal`, `which`.
 - `install` covers dependency expansion, manifest path/URL installs, bucket git-history `app@version`, hooks, installers, shims, shortcuts, environment mutation, PowerShell modules, persist linking, failed-install purge, and extract-dir/extract-to handling.
-- `update` now syncs buckets and self-updates `scoop` through the same versioned manifest install path.
+- Shared Phase 1 substrate now includes canonical hash-only cache keys and a persistent per-manifest version index for bucket-backed `app@version` resolution.
+- `update` now syncs buckets and stages `scoop` self-updates through the same versioned manifest install path.
 - `uninstall` and `reset` are implemented and use the same lifecycle substrate.
+- Phase 1 is complete-for-sign-off; current accepted differences are explicit deltas, not unresolved command-surface leftovers.
 - Canonical current behavior differences live in [`BEHAVIOR_DELTAS.md`](/E:/scoop-rs/BEHAVIOR_DELTAS.md).
 
 ## Immediate Open Gaps
 
-- No immediate open gaps are currently tracked here; active behavior gaps remain in [BEHAVIOR_DELTAS.md](/E:/scoop-rs/BEHAVIOR_DELTAS.md) and `THINGS_TO_ADDRESS.md`.
+- Self-update activation for a live `scoop-rs.exe` remains a documented design item in [`docs/bootstrap-updater.md`](/E:/scoop-rs/docs/bootstrap-updater.md); current behavior gaps remain in [BEHAVIOR_DELTAS.md](/E:/scoop-rs/BEHAVIOR_DELTAS.md) and `THINGS_TO_ADDRESS.md`.
 
 ## First Files To Read
 
@@ -56,6 +59,6 @@ This is the canonical compact engineering memory for the current `scoop-rs` stat
 
 ## Do Not Re-Decide
 
-- Installer/bootstrap owns running-exe replacement.
+- Self-update activation lives behind the bootstrap/updater boundary; the exact mechanism remains open.
 - Self-update must not regress back to git-checkout semantics.
 - The product route is binary distribution, Windows-first.
