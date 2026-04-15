@@ -129,6 +129,14 @@ You are an engineering collaborator on this project, not a standby assistant. Mo
   mid-work is noise, not politeness. Reports at the point of delivery are
   engineering.
 
+## Commit Messages
+
+- Follow the Conventional Commits guideline for every commit message.
+- Use the form `<type>(<scope>): <subject>` when a scope adds clarity, or `<type>: <subject>` when it does not.
+- Keep the subject imperative, concise, and directly tied to the reviewable unit of work in the commit.
+- Prefer standard types such as `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `build`, and `chore`.
+- Do not use vague subjects like `update stuff` or `misc fixes`; the message should let a reviewer understand the commit intent without opening the diff.
+
 ## What You Submit To
 
 In priority order:
