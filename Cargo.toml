@@ -1,0 +1,36 @@
+[workspace]
+members = ["crates/scoop-cli", "crates/scoop-core"]
+default-members = ["crates/scoop-cli"]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+rust-version = "1.94"
+version = "0.1.0"
+
+[workspace.dependencies]
+anyhow = "=1.0.102"
+camino = { version = "=1.2.2", features = ["serde1"] }
+jiff = "=0.2.23"
+regex = "=1.12.3"
+reqwest = { version = "=0.13.2", default-features = false, features = ["blocking", "brotli", "charset", "gzip", "http2", "json", "rustls"] }
+rusqlite = { version = "=0.39.0", features = ["bundled"] }
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = { version = "=1.0.149", features = ["preserve_order"] }
+sha2 = "=0.11.0"
+tempfile = "=3.27.0"
+tracing = "=0.1.44"
+tracing-subscriber = { version = "=0.3.23", features = ["env-filter", "fmt"] }
+sysinfo = "=0.38.4"
+windows = "=0.62.2"
+winreg = "=0.56.0"
+zip = { version = "=8.5.1", default-features = false, features = ["deflate"] }
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+unwrap_used = "deny"

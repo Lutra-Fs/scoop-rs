@@ -1,0 +1,10 @@
+pub mod app;
+pub mod compat;
+pub mod domain;
+pub mod infra;
+pub use app::resolve::{resolve_prefix, resolve_which};
+pub use compat::catalog::{ResolvedManifest, render_manifest_json, resolve_manifest};
+pub use domain::manifest::ScoopManifest;
+pub use domain::paths::ScoopPaths;
+pub use infra::config::{DEFAULT_SCOOP_GLOBAL_ROOT, DEFAULT_SCOOP_ROOT, RuntimeConfig};
+pub use infra::installed::{InstallScope, InstalledApp, normalize_for_text_comparison};
