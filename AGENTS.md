@@ -6,7 +6,7 @@ This repository is a Rust reimplementation of Scoop. The bar is:
 
 - 100% interoperability with Scoop manifests, layout, accepted command inputs, and functional command semantics.
 - Faster end-to-end execution than the PowerShell implementation on identical workloads.
-- Default installation root is `D:/Applications/Scoop` unless explicitly overridden.
+- Default installation root follows upstream local-root semantics: `$env:USERPROFILE\scoop`, unless explicitly overridden.
 - Human-facing CLI presentation is allowed to be opinionated when command meaning, machine-consumable output, exit-code semantics, and observable side effects stay stable.
 
 ## Repo shape
@@ -14,6 +14,7 @@ This repository is a Rust reimplementation of Scoop. The bar is:
 - `crates/scoop-core`: core domain types and implementation details.
 - `crates/scoop-cli`: the `scoop` binary and CLI surface.
 - Upstream PowerShell reference source for parity work: `<upstream-scoop-root>/apps/scoop/current`, where `<upstream-scoop-root>` follows upstream installer root resolution (`$ScoopDir`, then `$env:SCOOP`, then the default user install root `~/scoop` / `$env:USERPROFILE\scoop`).
+- Core manifest compatibility corpus for parity work: `<upstream-scoop-root>/buckets/main`, `<upstream-scoop-root>/buckets/nonportable`, and `<upstream-scoop-root>/buckets/extras`.
 
 Keep CLI orchestration in `scoop-cli`. Put compatibility logic, manifest handling, downloads, hashing, filesystem layout, and future install/update semantics in `scoop-core`.
 
@@ -33,6 +34,7 @@ Keep CLI orchestration in `scoop-cli`. Put compatibility logic, manifest handlin
 - Prefer deserializers that accept the same shape flexibility as Scoop manifests, including string-or-array style fields when applicable.
 - Treat Windows as the primary platform and test path behavior accordingly.
 - Match upstream on the input and functional layers: manifests, flags, environment variables, path resolution, filesystem side effects, and machine-consumable outputs.
+- Manifest compatibility passes should prioritize the core corpus under `<upstream-scoop-root>/buckets/main`, `<upstream-scoop-root>/buckets/nonportable`, and `<upstream-scoop-root>/buckets/extras`.
 - Human-facing stdout and stderr may use a scoop-rs-native presentation when the command meaning stays intact, the contract is stable, and the delta is documented.
 - Avoid “cleanups” that change exit-code meaning, observable filesystem layout, or machine-consumable output unless the change is deliberate and covered by tests.
 - Match upstream behavior, not upstream structure. Do not port PowerShell global-state patterns, ad hoc shell composition, or script-level side-effect coupling into Rust. Review the behavior and intent of each command and reimplement it with explicit data flow, typed APIs, and testable units of logic. Especially we need to reflect on the original code, e.g. error handling and test coverage, to ensure we are not repeating the same mistakes.

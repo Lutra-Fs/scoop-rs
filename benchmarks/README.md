@@ -23,6 +23,9 @@ Notes:
 - `IterationsPerRun` batches repeated command invocations so Windows process-launch noise does not dominate very fast commands.
 - The script benchmarks generated wrapper commands through `cmd.exe /c call ...`, which produced stable results on this machine where other `hyperfine` shell modes did not.
 - JSON outputs are written to `benchmarks/*.json` and are ignored by git because they are machine-specific measurements.
+- Scripts that invoke upstream Scoop resolve the root from `-UpstreamScoopRoot`, then `SCOOP`, then `$env:USERPROFILE\scoop`.
+- `benchmark-search-cache.ps1` resolves `-ScoopRoot` with the same root-selection order.
+- Fixture prepare scripts are generated into `benchmarks/` at runtime; repo-tracked benchmark helpers stay generic.
 - For the four-way comparison, install `sfsu` and `hok` with Scoop and make sure `Get-Command sfsu` and `Get-Command hok` resolve on PATH before running `benchmark-compare.ps1`.
 - The four-way compare keeps upstream Scoop as the behavior baseline, while `sfsu` and `hok` are reference points for speed.
 - `benchmark-suite.ps1` runs the named scenarios from the sfsu benchmark notes: `list`, `search-cold`, `search-warm`, `info-full`, and `info-fair`.

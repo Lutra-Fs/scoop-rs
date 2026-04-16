@@ -10,7 +10,7 @@ Rust reimplementation of Scoop with a hard target of upstream-compatible inputs 
 - Windows-first install lifecycle support covering dependency planning, URL/path manifests, bucket git-history `app@version`, installer hooks, shims, shortcuts, environment mutation, PowerShell modules, and persist handling.
 - Theme-safe semantic ANSI colors for CLI status output, with `--color auto|always|never`.
 - Human-facing CLI presentation follows a stable scoop-rs contract and can be more opinionated than upstream where clarity improves.
-- Default install root set to `D:/Applications/Scoop`.
+- Default install root follows upstream local-root semantics: `$env:USERPROFILE\scoop`.
 
 ## Near-term priorities
 
@@ -30,3 +30,5 @@ Rust reimplementation of Scoop with a hard target of upstream-compatible inputs 
 ## Upstream reference
 
 Use `<upstream-scoop-root>/apps/scoop/current` as the PowerShell parity reference when porting behavior. Resolve `<upstream-scoop-root>` with the same root-selection order used by the upstream installer: explicit installer path, then `$env:SCOOP`, then the default user install root `~/scoop` / `$env:USERPROFILE\scoop`.
+
+Use `<upstream-scoop-root>/buckets/main`, `<upstream-scoop-root>/buckets/nonportable`, and `<upstream-scoop-root>/buckets/extras` as the core manifest compatibility corpus for `Phase 2A` work.

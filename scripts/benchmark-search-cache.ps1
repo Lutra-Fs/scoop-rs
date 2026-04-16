@@ -7,15 +7,17 @@ param(
     [int]$Warmup = 1,
     [int]$Runs = 5,
 
-    [string]$ScoopRoot = 'D:\Applications\Scoop'
+    [string]$ScoopRoot
 )
 
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'root-helpers.ps1')
+$resolvedScoopRoot = Resolve-ScoopRoot -ScoopRoot $ScoopRoot
 $rustExe = Join-Path $repoRoot 'target\release\scoop.exe'
 $resultsDir = Join-Path $repoRoot 'benchmarks'
-$dbPath = Join-Path $ScoopRoot 'scoop.db'
+$dbPath = Join-Path $resolvedScoopRoot 'scoop.db'
 $tempConfigHome = Join-Path $env:TEMP ('scoop-rs-search-cache-' + [guid]::NewGuid())
 $backupPath = Join-Path $env:TEMP ('scoop-rs-search-cache-backup-' + [guid]::NewGuid() + '.db')
 $configDir = Join-Path $tempConfigHome 'scoop'

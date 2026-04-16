@@ -1,5 +1,6 @@
 param(
     [string]$Name = 'uninstall-fixture',
+    [string]$UpstreamScoopRoot,
     [int]$Warmup = 1,
     [int]$Runs = 3
 )
@@ -7,7 +8,8 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$upstreamRoot = 'D:\Applications\Scoop\apps\scoop\current'
+. (Join-Path $PSScriptRoot 'root-helpers.ps1')
+$upstreamRoot = Resolve-UpstreamAppRoot -ScoopRoot $UpstreamScoopRoot
 $rustExe = Join-Path $repoRoot 'target\release\scoop.exe'
 $resultsDir = Join-Path $repoRoot 'benchmarks'
 $wrapperDir = Join-Path $resultsDir 'wrappers'

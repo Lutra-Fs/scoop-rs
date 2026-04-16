@@ -22,6 +22,7 @@ This is the canonical compact engineering memory for the current `scoop-rs` stat
 - Documentation boundaries are explicit; do not duplicate the same fact across plan, memory, backlog, and delta files.
 - scoop-rs matches upstream on input and functional contracts; human-facing CLI presentation is allowed to be opinionated when the contract is stable and documented.
 - Phase `2` is now split into `2A` manifest/resolution parity, `2B` lifecycle/layout parity, `2C` bucket/network/CLI robustness, and `2D` installer/bootstrap/live-activation work.
+- `Phase 2A` uses `<upstream-scoop-root>/buckets/main`, `<upstream-scoop-root>/buckets/nonportable`, and `<upstream-scoop-root>/buckets/extras` as the core manifest compatibility corpus.
 - Command-layer self-update owns version planning, staging, and activation intent.
 - The final activation mechanism for a live `scoop-rs.exe` remains an open bootstrap/updater design space documented in `docs/bootstrap-updater.md`.
 

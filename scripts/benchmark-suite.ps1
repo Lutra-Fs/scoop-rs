@@ -2,6 +2,7 @@ param(
     [ValidateSet('all', 'list', 'search-cold', 'search-warm', 'info-full', 'info-fair')]
     [string]$Scenario = 'all',
 
+    [string]$UpstreamScoopRoot,
     [int]$IterationsPerRun = 50,
     [int]$Warmup = 5,
     [int]$Runs = 20
@@ -10,7 +11,8 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$upstreamRoot = 'D:\Applications\Scoop\apps\scoop\current'
+. (Join-Path $PSScriptRoot 'root-helpers.ps1')
+$upstreamRoot = Resolve-UpstreamAppRoot -ScoopRoot $UpstreamScoopRoot
 $rustExe = Join-Path $repoRoot 'target\release\scoop.exe'
 $resultsDir = Join-Path $repoRoot 'benchmarks'
 $wrapperDir = Join-Path $resultsDir 'wrappers'
@@ -154,10 +156,10 @@ switch ($Scenario) {
         )
     }
     'all' {
-        & $PSCommandPath -Scenario list -IterationsPerRun $IterationsPerRun -Warmup $Warmup -Runs $Runs
-        & $PSCommandPath -Scenario search-cold -IterationsPerRun $IterationsPerRun -Warmup $Warmup -Runs $Runs
-        & $PSCommandPath -Scenario search-warm -IterationsPerRun $IterationsPerRun -Warmup $Warmup -Runs $Runs
-        & $PSCommandPath -Scenario info-full -IterationsPerRun $IterationsPerRun -Warmup $Warmup -Runs $Runs
-        & $PSCommandPath -Scenario info-fair -IterationsPerRun $IterationsPerRun -Warmup $Warmup -Runs $Runs
+        & $PSCommandPath -Scenario list -UpstreamScoopRoot $UpstreamScoopRoot -IterationsPerRun $IterationsPerRun -Warmup $Warmup -Runs $Runs
+        & $PSCommandPath -Scenario search-cold -UpstreamScoopRoot $UpstreamScoopRoot -IterationsPerRun $IterationsPerRun -Warmup $Warmup -Runs $Runs
+        & $PSCommandPath -Scenario search-warm -UpstreamScoopRoot $UpstreamScoopRoot -IterationsPerRun $IterationsPerRun -Warmup $Warmup -Runs $Runs
+        & $PSCommandPath -Scenario info-full -UpstreamScoopRoot $UpstreamScoopRoot -IterationsPerRun $IterationsPerRun -Warmup $Warmup -Runs $Runs
+        & $PSCommandPath -Scenario info-fair -UpstreamScoopRoot $UpstreamScoopRoot -IterationsPerRun $IterationsPerRun -Warmup $Warmup -Runs $Runs
     }
 }

@@ -5,6 +5,7 @@ param(
     [Parameter(Mandatory)]
     [string[]]$Args,
 
+    [string]$UpstreamScoopRoot,
     [string]$SfsuCommand = 'sfsu',
     [string]$HokCommand = 'hok',
     [int]$IterationsPerRun = 50,
@@ -15,7 +16,8 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$upstreamRoot = 'D:\Applications\Scoop\apps\scoop\current'
+. (Join-Path $PSScriptRoot 'root-helpers.ps1')
+$upstreamRoot = Resolve-UpstreamAppRoot -ScoopRoot $UpstreamScoopRoot
 $rustExe = Join-Path $repoRoot 'target\release\scoop.exe'
 $resultsDir = Join-Path $repoRoot 'benchmarks'
 $wrapperDir = Join-Path $resultsDir 'wrappers'

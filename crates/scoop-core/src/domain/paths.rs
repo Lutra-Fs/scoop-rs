@@ -60,22 +60,22 @@ mod tests {
 
     #[test]
     fn joins_default_layout_consistently() {
-        let paths = ScoopPaths::new(Utf8PathBuf::from("D:/Applications/Scoop"));
+        let paths = ScoopPaths::new(Utf8PathBuf::from("C:/Users/example/scoop"));
 
-        assert_eq!(paths.apps(), "D:/Applications/Scoop/apps");
-        assert_eq!(paths.app_dir("git"), "D:/Applications/Scoop/apps/git");
-        assert_eq!(paths.buckets(), "D:/Applications/Scoop/buckets");
-        assert_eq!(paths.cache(), "D:/Applications/Scoop/cache");
+        assert_eq!(paths.apps(), "C:/Users/example/scoop/apps");
+        assert_eq!(paths.app_dir("git"), "C:/Users/example/scoop/apps/git");
+        assert_eq!(paths.buckets(), "C:/Users/example/scoop/buckets");
+        assert_eq!(paths.cache(), "C:/Users/example/scoop/cache");
         assert_eq!(
             paths.current_dir("git"),
-            "D:/Applications/Scoop/apps/git/current"
+            "C:/Users/example/scoop/apps/git/current"
         );
-        assert_eq!(paths.persist(), "D:/Applications/Scoop/persist");
-        assert_eq!(paths.shims(), "D:/Applications/Scoop/shims");
+        assert_eq!(paths.persist(), "C:/Users/example/scoop/persist");
+        assert_eq!(paths.shims(), "C:/Users/example/scoop/shims");
         assert_eq!(
             paths.version_dir("git", "2.53.0.2"),
-            "D:/Applications/Scoop/apps/git/2.53.0.2"
+            "C:/Users/example/scoop/apps/git/2.53.0.2"
         );
-        assert_eq!(paths.workspace(), "D:/Applications/Scoop/workspace");
+        assert_eq!(paths.workspace(), "C:/Users/example/scoop/workspace");
     }
 }

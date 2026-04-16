@@ -7,7 +7,6 @@ use serde_json::{Map, Value};
 
 use crate::domain::paths::ScoopPaths;
 
-pub const DEFAULT_SCOOP_ROOT: &str = "D:/Applications/Scoop";
 pub const DEFAULT_SCOOP_GLOBAL_ROOT: &str = "C:/ProgramData/scoop";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -72,6 +71,7 @@ impl RuntimeConfig {
 
     pub fn detect(root_override: Option<Utf8PathBuf>) -> Self {
         let user_settings = load_settings(user_config_path().as_deref());
+        let default_local_root = default_scoop_root();
         let default_program_data = std::env::var("PROGRAMDATA")
             .map(|path| Utf8PathBuf::from(path).join("scoop"))
             .unwrap_or_else(|_| Utf8PathBuf::from(DEFAULT_SCOOP_GLOBAL_ROOT));
@@ -82,6 +82,7 @@ impl RuntimeConfig {
             std::env::var("SCOOP_GLOBAL").ok().map(Utf8PathBuf::from),
             std::env::var("SCOOP_CACHE").ok().map(Utf8PathBuf::from),
             user_settings,
+            default_local_root,
             default_program_data,
         )
     }
@@ -92,12 +93,13 @@ impl RuntimeConfig {
         scoop_global_env: Option<Utf8PathBuf>,
         scoop_cache_env: Option<Utf8PathBuf>,
         user_settings: ScoopSettings,
+        default_local_root: Utf8PathBuf,
         default_global_root: Utf8PathBuf,
     ) -> Self {
         let local_root = root_override
             .or(scoop_env)
             .or_else(|| user_settings.root_path.as_ref().map(Utf8PathBuf::from))
-            .unwrap_or_else(|| Utf8PathBuf::from(DEFAULT_SCOOP_ROOT));
+            .unwrap_or(default_local_root);
         let global_root = scoop_global_env
             .or_else(|| user_settings.global_path.as_ref().map(Utf8PathBuf::from))
             .unwrap_or(default_global_root);
@@ -125,6 +127,21 @@ impl RuntimeConfig {
         let portable_settings = load_settings(Some(&self.paths().root().join("config.json")));
         user_settings.merge(portable_settings)
     }
+}
+
+pub fn default_scoop_root() -> Utf8PathBuf {
+    default_scoop_root_from_env(
+        std::env::var("USERPROFILE").ok(),
+        std::env::var("HOME").ok(),
+    )
+}
+
+fn default_scoop_root_from_env(userprofile: Option<String>, home: Option<String>) -> Utf8PathBuf {
+    userprofile
+        .or(home)
+        .map(|path| Utf8PathBuf::from(path.replace('\\', "/")))
+        .unwrap_or_default()
+        .join("scoop")
 }
 
 impl ScoopSettings {
@@ -278,8 +295,9 @@ mod tests {
     use tempfile::TempDir;
 
     use super::{
-        DEFAULT_SCOOP_GLOBAL_ROOT, DEFAULT_SCOOP_ROOT, RuntimeConfig, ScoopSettings,
-        active_config_path, active_config_value, portable_config_path, set_active_config_value,
+        DEFAULT_SCOOP_GLOBAL_ROOT, RuntimeConfig, ScoopSettings, active_config_path,
+        active_config_value, default_scoop_root_from_env, portable_config_path,
+        set_active_config_value,
     };
 
     #[test]
@@ -290,14 +308,44 @@ mod tests {
             Some(Utf8PathBuf::from("C:/ProgramData/scoop")),
             None,
             ScoopSettings::default(),
+            Utf8PathBuf::from("C:/Users/example/scoop"),
             Utf8PathBuf::from("C:/ProgramData/scoop"),
         );
         assert_eq!(config.paths().root(), "E:/Portable/Scoop");
     }
 
     #[test]
-    fn default_root_constant_matches_repo_target() {
-        assert_eq!(DEFAULT_SCOOP_ROOT, "D:/Applications/Scoop");
+    fn default_root_uses_userprofile_semantics() {
+        assert_eq!(
+            default_scoop_root_from_env(
+                Some(String::from("C:/Users/example")),
+                Some(String::from("C:/Users/fallback"))
+            ),
+            Utf8PathBuf::from("C:/Users/example/scoop")
+        );
+    }
+
+    #[test]
+    fn default_root_uses_home_as_guard() {
+        assert_eq!(
+            default_scoop_root_from_env(None, Some(String::from("C:/Users/example"))),
+            Utf8PathBuf::from("C:/Users/example/scoop")
+        );
+    }
+
+    #[test]
+    fn default_root_from_parts_is_used_when_override_env_and_config_are_absent() {
+        let config = RuntimeConfig::from_parts(
+            None,
+            None,
+            None,
+            None,
+            ScoopSettings::default(),
+            Utf8PathBuf::from("C:/Users/example/scoop"),
+            Utf8PathBuf::from(DEFAULT_SCOOP_GLOBAL_ROOT),
+        );
+
+        assert_eq!(config.paths().root(), "C:/Users/example/scoop");
     }
 
     #[test]
@@ -308,6 +356,7 @@ mod tests {
             None,
             None,
             ScoopSettings::default(),
+            Utf8PathBuf::from("C:/Users/example/scoop"),
             Utf8PathBuf::from(DEFAULT_SCOOP_GLOBAL_ROOT),
         );
         assert_eq!(config.global_paths().root(), DEFAULT_SCOOP_GLOBAL_ROOT);
@@ -321,6 +370,7 @@ mod tests {
             Some(Utf8PathBuf::from("E:/Global/Scoop")),
             None,
             ScoopSettings::default(),
+            Utf8PathBuf::from("C:/Users/example/scoop"),
             Utf8PathBuf::from(DEFAULT_SCOOP_GLOBAL_ROOT),
         );
         assert_eq!(config.global_paths().root(), "E:/Global/Scoop");
@@ -339,6 +389,7 @@ mod tests {
                 cache_path: Some(String::from("E:/Configured/Cache")),
                 ..ScoopSettings::default()
             },
+            Utf8PathBuf::from("C:/Users/example/scoop"),
             Utf8PathBuf::from(DEFAULT_SCOOP_GLOBAL_ROOT),
         );
 

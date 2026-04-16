@@ -141,16 +141,16 @@ mod tests {
             String::from("64bit"),
             false,
             InstallContextPaths {
-                dir: Utf8PathBuf::from("D:/Applications/Scoop/apps/demo/current"),
-                original_dir: Utf8PathBuf::from("D:/Applications/Scoop/apps/demo/1.2.3"),
-                persist_dir: Utf8PathBuf::from("D:/Applications/Scoop/persist/demo"),
+                dir: Utf8PathBuf::from("C:/Users/example/scoop/apps/demo/current"),
+                original_dir: Utf8PathBuf::from("C:/Users/example/scoop/apps/demo/1.2.3"),
+                persist_dir: Utf8PathBuf::from("C:/Users/example/scoop/persist/demo"),
             },
             json!({ "version": "1.2.3" }),
         );
 
         assert_eq!(
             context.substitute("$original_dir|$persist_dir|$dir|$version|$global"),
-            "D:\\Applications\\Scoop\\apps\\demo\\1.2.3|D:\\Applications\\Scoop\\persist\\demo|D:\\Applications\\Scoop\\apps\\demo\\current|1.2.3|false"
+            "C:\\Users\\example\\scoop\\apps\\demo\\1.2.3|C:\\Users\\example\\scoop\\persist\\demo|C:\\Users\\example\\scoop\\apps\\demo\\current|1.2.3|false"
         );
     }
 }

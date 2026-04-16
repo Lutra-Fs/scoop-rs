@@ -30,6 +30,7 @@ This is the canonical long-horizon migration plan for turning `scoop-rs` into th
   - URL, hash, redirect, and indirection parity
   - direct file, UNC, URL, and explicit-source manifest resolution closure for remaining commands
   - deterministic parser and input-validation behavior for manifest-backed commands
+  - core manifest compatibility coverage anchored to `<upstream-scoop-root>/buckets/main`, `<upstream-scoop-root>/buckets/nonportable`, and `<upstream-scoop-root>/buckets/extras`
 - Out of scope:
   - installer/bootstrap activation work
 - Exit criteria:
@@ -99,6 +100,7 @@ This is the canonical long-horizon migration plan for turning `scoop-rs` into th
 
 - Use [`THINGS_TO_ADDRESS.md`](/E:/scoop-rs/THINGS_TO_ADDRESS.md) as the source for issue clusters tagged to `Phase 2A`.
 - Keep `Phase 2A` focused on inputs, manifests, and resolution rules before widening lifecycle or bootstrap scope.
+- Treat `<upstream-scoop-root>/buckets/main`, `<upstream-scoop-root>/buckets/nonportable`, and `<upstream-scoop-root>/buckets/extras` as the default manifest corpus for compatibility passes unless a task explicitly targets a different bucket set.
 - Every closed edge case must either remove a delta or add explicit coverage for why the delta remains.
 
 ### Phase 2B details
