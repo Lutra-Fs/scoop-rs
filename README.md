@@ -8,6 +8,7 @@ Rust reimplementation of Scoop with a hard target of full interoperability and m
 - Implemented command surface: `help`, `version`, `list`, `cat`, `info`, `search`, `status`, `prefix`, `which`, and a substantial `install` path.
 - Upstream-compatible SQLite-backed `search` cache with local and cross-implementation benchmarks.
 - Windows-first install lifecycle support covering dependency planning, URL/path manifests, bucket git-history `app@version`, installer hooks, shims, shortcuts, environment mutation, PowerShell modules, and persist handling.
+- Theme-safe semantic ANSI colors for CLI status output, with `--color auto|always|never`.
 - Default install root set to `D:/Applications/Scoop`.
 
 ## Near-term priorities

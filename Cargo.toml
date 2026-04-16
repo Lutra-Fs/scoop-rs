@@ -13,6 +13,7 @@ version = "0.1.0"
 anyhow = "=1.0.102"
 camino = { version = "=1.2.2", features = ["serde1"] }
 jiff = "=0.2.23"
+owo-colors = "=4.3.0"
 regex = "=1.12.3"
 reqwest = { version = "=0.13.2", default-features = false, features = ["blocking", "brotli", "charset", "gzip", "http2", "json", "rustls"] }
 rusqlite = { version = "=0.39.0", features = ["bundled"] }

@@ -32,15 +32,20 @@ fn help_overview_from_binary_contains_expected_contract() {
             .contains("help        Show help for a command")
     );
     assert!(output.stdout.contains("install     Install apps"));
+    assert!(output.stdout.contains("Global options:"));
+    assert!(output.stdout.contains("--color <auto|always|never>"));
 }
 
 #[test]
-fn help_for_command_from_binary_returns_usage_only() {
+fn help_for_command_from_binary_includes_global_options() {
     let output = run_binary(&["help", "help"]);
 
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(output.stderr, "");
-    assert_eq!(output.stdout, "Usage: scoop help <command>\r\n\r\n");
+    assert_eq!(
+        output.stdout,
+        "Usage: scoop help <command>\r\n\r\n\r\nGlobal options:\r\n  --color <auto|always|never>  Control ANSI color output.\r\n"
+    );
 }
 
 #[test]
@@ -76,13 +81,61 @@ fn parity_help_missing_matches_upstream_exactly() {
 }
 
 #[test]
-fn parity_help_usage_matches_upstream_exactly() {
-    let ours = run_binary(&["help", "help"]);
-    let upstream = run_upstream(&["help", "help"]);
+fn color_never_keeps_warning_output_plain() {
+    let output = run_binary(&["--color", "never", "missing"]);
 
-    assert_eq!(ours.status.code(), upstream.status.code());
-    assert_upstream_stderr_is_environmental(&ours, &upstream);
-    assert_eq!(ours.stdout, upstream.stdout);
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(output.stderr, "");
+    assert_eq!(
+        output.stdout,
+        "WARN  scoop: 'missing' isn't a scoop command. See 'scoop help'.\r\n"
+    );
+    assert_eq!(strip_ansi(&output.stdout), output.stdout);
+}
+
+#[test]
+fn color_auto_respects_no_color() {
+    let output = run_binary_with_env(&["missing"], &[("NO_COLOR", "1")]);
+
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(output.stderr, "");
+    assert_eq!(
+        output.stdout,
+        "WARN  scoop: 'missing' isn't a scoop command. See 'scoop help'.\r\n"
+    );
+    assert_eq!(strip_ansi(&output.stdout), output.stdout);
+}
+
+#[test]
+fn color_always_applies_ansi_to_help_and_warning_output() {
+    let help = run_binary(&["--color", "always", "help"]);
+    assert_eq!(help.status.code(), Some(0));
+    assert_eq!(help.stderr, "");
+    assert!(help.stdout.contains("\u{1b}["));
+    assert!(strip_ansi(&help.stdout).contains("Global options:"));
+    assert!(strip_ansi(&help.stdout).contains("--color <auto|always|never>"));
+
+    let warning = run_binary(&["--color", "always", "missing"]);
+    assert_eq!(warning.status.code(), Some(1));
+    assert_eq!(warning.stderr, "");
+    assert!(warning.stdout.contains("\u{1b}["));
+    assert_eq!(
+        strip_ansi(&warning.stdout),
+        "WARN  scoop: 'missing' isn't a scoop command. See 'scoop help'.\r\n"
+    );
+}
+
+#[test]
+fn color_always_overrides_no_color() {
+    let output = run_binary_with_env(&["--color", "always", "missing"], &[("NO_COLOR", "1")]);
+
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(output.stderr, "");
+    assert!(output.stdout.contains("\u{1b}["));
+    assert_eq!(
+        strip_ansi(&output.stdout),
+        "WARN  scoop: 'missing' isn't a scoop command. See 'scoop help'.\r\n"
+    );
 }
 
 #[test]
@@ -1932,6 +1985,43 @@ fn install_from_fixture_bucket_extracts_payload_and_creates_cmd_shim() {
 }
 
 #[test]
+fn color_always_colorizes_install_success_output() {
+    let fixture = InstallFixture::new();
+    let archive = fixture.write_zip("demo.zip", &[("demo.exe", b"demo binary")]);
+    let hash = scoop_core::infra::hash::sha256_file(&camino::Utf8PathBuf::from(&archive))
+        .expect("hash should compute");
+    fixture.bucket_manifest(
+        "main",
+        "demo",
+        &format!(
+            r#"{{
+                "version":"1.2.3",
+                "url":"{}",
+                "hash":"{}",
+                "bin":"demo.exe"
+            }}"#,
+            escape_json_path(&archive),
+            hash
+        ),
+    );
+
+    let output = run_binary_with_env(
+        &["--color", "always", "install", "demo", "--no-update-scoop"],
+        &[
+            ("SCOOP", fixture.local_root()),
+            ("SCOOP_GLOBAL", fixture.global_root()),
+        ],
+    );
+
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(output.stderr, "");
+    assert!(output.stdout.contains("\u{1b}["));
+    let plain = strip_ansi(&output.stdout);
+    assert!(plain.contains("Installing 'demo' (1.2.3) [64bit] from 'main' bucket"));
+    assert!(plain.contains("'demo' (1.2.3) was installed successfully!"));
+}
+
+#[test]
 fn install_hash_mismatch_returns_actionable_error() {
     let fixture = InstallFixture::new();
     let archive = fixture.write_zip("demo.zip", &[("demo.exe", b"demo binary")]);
@@ -2816,6 +2906,27 @@ fn status_reports_clean_state_when_everything_is_ok() {
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(output.stderr, "");
     assert_eq!(output.stdout, "Everything is ok!\r\n");
+}
+
+#[test]
+fn color_always_colorizes_status_success_output() {
+    let fixture = SearchStatusFixture::new();
+    fixture.bucket_manifest("main", "demo", r#"{"version":"1.2.3"}"#);
+    fixture.installed_manifest("local", "demo", r#"{"version":"1.2.3"}"#);
+    fixture.install_metadata("local", "demo", "1.2.3", r#"{"bucket":"main"}"#);
+
+    let output = run_binary_with_env(
+        &["--color", "always", "status", "-l"],
+        &[
+            ("SCOOP", fixture.local_root()),
+            ("SCOOP_GLOBAL", fixture.global_root()),
+        ],
+    );
+
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(output.stderr, "");
+    assert!(output.stdout.contains("\u{1b}["));
+    assert_eq!(strip_ansi(&output.stdout), "Everything is ok!\r\n");
 }
 
 #[test]

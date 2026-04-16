@@ -1,6 +1,8 @@
+mod color;
 mod registry;
 
 use anyhow::Context;
+use color::{ColorContext, ColorPreference};
 use registry::{COMMANDS, find};
 use scoop_core::InstalledApp;
 use scoop_core::app::bucket::{
@@ -63,6 +65,7 @@ fn emit(output: &mut String, current_level: OutputLevel, message_level: OutputLe
     }
 }
 
+#[derive(Debug)]
 struct Response {
     code: i32,
     output: String,
@@ -71,12 +74,18 @@ struct Response {
 fn main() -> anyhow::Result<()> {
     init_tracing()?;
 
-    let args = std::env::args().skip(1).collect::<Vec<_>>();
-    let response = run(&args);
+    let raw_args = std::env::args().skip(1).collect::<Vec<_>>();
+    let (parsed_args, color_preference) = parse_global_args(&raw_args);
+    let colors = ColorContext::from_preference(color_preference);
+    let response = match parsed_args {
+        Ok(args) => run(&args),
+        Err(response) => response,
+    };
+    let rendered_output = colors.colorize_output(&response.output);
 
-    if !response.output.is_empty() {
+    if !rendered_output.is_empty() {
         std::io::stdout()
-            .write_all(response.output.as_bytes())
+            .write_all(rendered_output.as_bytes())
             .context("failed to write CLI output")?;
     }
 
@@ -156,6 +165,58 @@ fn run(args: &[String]) -> Response {
             },
         },
     }
+}
+
+fn parse_global_args(args: &[String]) -> (Result<Vec<String>, Response>, ColorPreference) {
+    let mut color_preference = ColorPreference::Auto;
+    let mut index = 0;
+    while let Some(arg) = args.get(index) {
+        if arg == "--color" {
+            let Some(value) = args.get(index + 1) else {
+                return (
+                    Err(Response {
+                        code: 1,
+                        output: format!(
+                            "ERROR scoop: Option --color requires one of: auto, always, never.{EOL}"
+                        ),
+                    }),
+                    color_preference,
+                );
+            };
+            let Some(parsed) = ColorPreference::parse(value) else {
+                return (
+                    Err(Response {
+                        code: 1,
+                        output: format!(
+                            "ERROR scoop: invalid color mode '{value}'. Expected auto, always, or never.{EOL}"
+                        ),
+                    }),
+                    color_preference,
+                );
+            };
+            color_preference = parsed;
+            index += 2;
+            continue;
+        }
+        if let Some(value) = arg.strip_prefix("--color=") {
+            let Some(parsed) = ColorPreference::parse(value) else {
+                return (
+                    Err(Response {
+                        code: 1,
+                        output: format!(
+                            "ERROR scoop: invalid color mode '{value}'. Expected auto, always, or never.{EOL}"
+                        ),
+                    }),
+                    color_preference,
+                );
+            };
+            color_preference = parsed;
+            index += 1;
+            continue;
+        }
+        break;
+    }
+    (Ok(args[index..].to_vec()), color_preference)
 }
 
 fn handle_help(args: &[String]) -> Response {
@@ -440,14 +501,23 @@ fn render_help_overview() -> String {
     for command in COMMANDS {
         output.push_str(&format!("{:<11} {}{EOL}", command.name, command.summary));
     }
+    output.push_str(EOL);
+    output.push_str(render_global_options().as_str());
     output
 }
 
 fn render_command_help(usage: &str, help: Option<&str>) -> String {
-    match help {
+    let mut output = match help {
         Some(help_text) if !help_text.is_empty() => format!("{usage}{EOL}{EOL}{help_text}{EOL}"),
         _ => format!("{usage}{EOL}{EOL}"),
-    }
+    };
+    output.push_str(EOL);
+    output.push_str(render_global_options().as_str());
+    output
+}
+
+fn render_global_options() -> String {
+    format!("Global options:{EOL}  --color <auto|always|never>  Control ANSI color output.{EOL}")
 }
 
 fn run_bucket(args: &[String]) -> anyhow::Result<Response> {
@@ -2764,7 +2834,10 @@ mod tests {
     fn help_for_known_command_returns_usage() {
         let (code, output) = response(&["help", "help"]);
         assert_eq!(code, 0);
-        assert_eq!(output, "Usage: scoop help <command>\r\n\r\n");
+        assert_eq!(
+            output,
+            "Usage: scoop help <command>\r\n\r\n\r\nGlobal options:\r\n  --color <auto|always|never>  Control ANSI color output.\r\n"
+        );
     }
 
     #[test]
@@ -2781,6 +2854,36 @@ mod tests {
         assert_eq!(
             output,
             "WARN  scoop: 'missing' isn't a scoop command. See 'scoop help'.\r\n"
+        );
+    }
+
+    #[test]
+    fn parse_global_args_extracts_color_switches_from_prefix_position() {
+        let args = vec![
+            "--color=always".to_owned(),
+            "status".to_owned(),
+            "-l".to_owned(),
+        ];
+
+        let (parsed, color) = super::parse_global_args(&args);
+        let parsed = parsed.expect("global args should parse");
+
+        assert_eq!(color, super::ColorPreference::Always);
+        assert_eq!(parsed, vec!["status".to_owned(), "-l".to_owned()]);
+    }
+
+    #[test]
+    fn parse_global_args_reports_invalid_mode() {
+        let args = vec!["--color".to_owned(), "bad".to_owned(), "status".to_owned()];
+
+        let (parsed, color) = super::parse_global_args(&args);
+        let response = parsed.expect_err("invalid color mode should fail");
+
+        assert_eq!(color, super::ColorPreference::Auto);
+        assert_eq!(response.code, 1);
+        assert_eq!(
+            response.output,
+            "ERROR scoop: invalid color mode 'bad'. Expected auto, always, or never.\r\n"
         );
     }
 }
