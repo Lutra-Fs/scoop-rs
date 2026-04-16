@@ -4,9 +4,10 @@
 
 This repository is a Rust reimplementation of Scoop. The bar is:
 
-- 100% interoperability with Scoop manifests, layout, and user-visible CLI behavior.
+- 100% interoperability with Scoop manifests, layout, accepted command inputs, and functional command semantics.
 - Faster end-to-end execution than the PowerShell implementation on identical workloads.
 - Default installation root is `D:/Applications/Scoop` unless explicitly overridden.
+- Human-facing CLI presentation is allowed to be opinionated when command meaning, machine-consumable output, exit-code semantics, and observable side effects stay stable.
 
 ## Repo shape
 
@@ -27,10 +28,13 @@ Keep CLI orchestration in `scoop-cli`. Put compatibility logic, manifest handlin
 
 ## Compatibility rules
 
+- Treat compatibility as three layers: input contract, functional contract, and presentation contract.
 - Preserve Scoop path semantics and environment variable behavior.
 - Prefer deserializers that accept the same shape flexibility as Scoop manifests, including string-or-array style fields when applicable.
 - Treat Windows as the primary platform and test path behavior accordingly.
-- Avoid “cleanups” that change output text, exit codes, or observable filesystem layout unless the change is deliberate and covered by tests.
+- Match upstream on the input and functional layers: manifests, flags, environment variables, path resolution, filesystem side effects, and machine-consumable outputs.
+- Human-facing stdout and stderr may use a scoop-rs-native presentation when the command meaning stays intact, the contract is stable, and the delta is documented.
+- Avoid “cleanups” that change exit-code meaning, observable filesystem layout, or machine-consumable output unless the change is deliberate and covered by tests.
 - Match upstream behavior, not upstream structure. Do not port PowerShell global-state patterns, ad hoc shell composition, or script-level side-effect coupling into Rust. Review the behavior and intent of each command and reimplement it with explicit data flow, typed APIs, and testable units of logic. Especially we need to reflect on the original code, e.g. error handling and test coverage, to ensure we are not repeating the same mistakes.
 - If a Windows behavior can be implemented natively in Rust, prefer the Rust implementation over shelling out to `pwsh`. Do not reintroduce PowerShell as an internal control plane for things like process inspection, path probing, filesystem checks, or other OS queries that are available through Rust crates or the standard library.
 - PowerShell remains acceptable only where Scoop compatibility actually depends on PowerShell semantics, such as manifest hook execution, installer or uninstaller scripts, or other user-supplied script surfaces that upstream intentionally runs inside PowerShell.

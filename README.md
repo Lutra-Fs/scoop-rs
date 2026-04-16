@@ -1,6 +1,6 @@
 # scoop-rs
 
-Rust reimplementation of Scoop with a hard target of full interoperability and materially better performance than the PowerShell implementation.
+Rust reimplementation of Scoop with a hard target of upstream-compatible inputs and command outcomes, plus materially better performance than the PowerShell implementation.
 
 ## Current scope
 
@@ -9,13 +9,14 @@ Rust reimplementation of Scoop with a hard target of full interoperability and m
 - Upstream-compatible SQLite-backed `search` cache with local and cross-implementation benchmarks.
 - Windows-first install lifecycle support covering dependency planning, URL/path manifests, bucket git-history `app@version`, installer hooks, shims, shortcuts, environment mutation, PowerShell modules, and persist handling.
 - Theme-safe semantic ANSI colors for CLI status output, with `--color auto|always|never`.
+- Human-facing CLI presentation follows a stable scoop-rs contract and can be more opinionated than upstream where clarity improves.
 - Default install root set to `D:/Applications/Scoop`.
 
 ## Near-term priorities
 
-1. Close the remaining install parity gaps.
-2. Build the uninstall/reset/update lifecycle on top of the install substrate.
-3. Keep command-level parity tests and benchmark coverage moving with each implemented command.
+1. Close `Phase 2A` manifest, resolution, and input-parity gaps.
+2. Advance `Phase 2B` and `Phase 2C` lifecycle, network, bucket, and CLI robustness work.
+3. Keep `Phase 2D` installer/bootstrap activation design moving while benchmarks stay current for implemented commands.
 
 ## Documentation map
 

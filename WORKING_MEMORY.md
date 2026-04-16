@@ -20,6 +20,8 @@ This is the canonical compact engineering memory for the current `scoop-rs` stat
 - PowerShell remains only for compatibility surfaces such as hooks, installers, and uninstallers.
 - `unsafe` is allowed only in narrow infra/platform boundaries behind safe typed APIs.
 - Documentation boundaries are explicit; do not duplicate the same fact across plan, memory, backlog, and delta files.
+- scoop-rs matches upstream on input and functional contracts; human-facing CLI presentation is allowed to be opinionated when the contract is stable and documented.
+- Phase `2` is now split into `2A` manifest/resolution parity, `2B` lifecycle/layout parity, `2C` bucket/network/CLI robustness, and `2D` installer/bootstrap/live-activation work.
 - Command-layer self-update owns version planning, staging, and activation intent.
 - The final activation mechanism for a live `scoop-rs.exe` remains an open bootstrap/updater design space documented in `docs/bootstrap-updater.md`.
 
@@ -35,6 +37,7 @@ This is the canonical compact engineering memory for the current `scoop-rs` stat
 
 ## Immediate Open Gaps
 
+- Active roadmap work starts with `Phase 2A`: manifest, resolution, and input parity.
 - Installer/bootstrap follow-up and self-update activation for a live `scoop-rs.exe` are tracked in [`THINGS_TO_ADDRESS.md`](/E:/scoop-rs/THINGS_TO_ADDRESS.md) and [`docs/bootstrap-updater.md`](/E:/scoop-rs/docs/bootstrap-updater.md).
 
 ## First Files To Read

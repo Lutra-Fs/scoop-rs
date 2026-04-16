@@ -7,7 +7,8 @@ This is the canonical long-horizon migration plan for turning `scoop-rs` into th
 - `scoop-rs` is the default `scoop` users invoke.
 - Distribution is binary-first and Windows-first.
 - `scoop` self-update uses a versioned binary path, not a git-checkout path.
-- Scoop manifests, layout, and user-visible CLI behavior are compatible with upstream.
+- Scoop manifests, layout, accepted command inputs, and functional command semantics are compatible with upstream.
+- Human-facing CLI presentation is a stable scoop-rs contract and may diverge intentionally where clarity or ergonomics improve without changing command meaning.
 - Parity-complete workloads are faster end-to-end than upstream PowerShell Scoop.
 
 ## Current Baseline
@@ -16,24 +17,66 @@ This is the canonical long-horizon migration plan for turning `scoop-rs` into th
 - `scoop` self-update now follows a versioned manifest install pipeline and stages activation intent in-repo.
 - Lifecycle parity work at command-layer is complete for behavior-contract intent.
 - Command-layer boundary work is complete in-repo: self-update for `scoop` itself is handled in Rust through versioned install and staged activation intent; bootstrap, installer, and live-activation follow-up is tracked in [`THINGS_TO_ADDRESS.md`](/E:/scoop-rs/THINGS_TO_ADDRESS.md) and [`docs/bootstrap-updater.md`](/E:/scoop-rs/docs/bootstrap-updater.md).
-- Active roadmap work now starts at manifest parity, installer/bootstrap backlog, and broader performance hardening.
+- Active roadmap work now starts with Phase `2A`, while installer/bootstrap follow-up remains a dedicated Phase `2D` track and broader performance hardening remains Phase `3`.
 
 ## Migration Phases
 
-### Phase 2: Manifest and Edge-Case Parity Sweep
+### Phase 2A: Manifest, Resolution, and Input Parity
 
-- Goal: close the remaining manifest-shape and edge-case compatibility gaps that only appear in real-world Scoop usage.
+- Goal: close manifest-shape, variable-expansion, and command-input compatibility gaps that block real-world Scoop usage.
 - Deliverables:
   - broader manifest field compatibility
   - richer variable substitution parity
-  - archive, persist, shim, and redirect edge-case handling
-  - direct file / UNC / URL manifest behavior closure for remaining commands
-  - targeted fixes for upstream issue clusters already tracked in [`THINGS_TO_ADDRESS.md`](/E:/scoop-rs/THINGS_TO_ADDRESS.md)
+  - URL, hash, redirect, and indirection parity
+  - direct file, UNC, URL, and explicit-source manifest resolution closure for remaining commands
+  - deterministic parser and input-validation behavior for manifest-backed commands
 - Out of scope:
-  - non-Windows-first abstractions that do not help Scoop parity
+  - installer/bootstrap activation work
 - Exit criteria:
-  - the remaining deltas are narrow, explicitly intentional, and low user impact
-  - manifest and filesystem edge cases have direct fixture coverage
+  - manifest and input edge cases have direct fixture coverage
+  - remaining manifest-resolution deltas are narrow, explicit, and low impact
+
+### Phase 2B: Lifecycle, Side-Effect, and Layout Parity
+
+- Goal: make install, download, uninstall, reset, and related side effects behave like dependable Scoop lifecycle operations in real environments.
+- Deliverables:
+  - unified download/cache/retry planning across lifecycle commands
+  - archive extraction, persist, shim, shortcut, and environment-mutation edge-case coverage
+  - uninstall/reset parity for lifecycle side effects and recovery flows
+  - stable progress and summary output for lifecycle commands
+- Out of scope:
+  - root-entry bootstrap and live-engine activation
+- Exit criteria:
+  - lifecycle edge cases have fixture coverage across install, update, uninstall, and reset
+  - remaining layout and side-effect deltas are intentional and documented
+
+### Phase 2C: Bucket, Network, and CLI Robustness
+
+- Goal: harden bucket, update, network, and CLI behavior so routine Scoop usage stays reliable under imperfect environments.
+- Deliverables:
+  - bucket and git-metadata resilience for `status`, `list`, and freshness checks
+  - retry, proxy, rate-limit, and large-download robustness
+  - deterministic CLI help, parser, and redirected-output behavior
+  - policy coverage for packages that customize or depend on other packages
+- Out of scope:
+  - launcher and installer architecture work
+- Exit criteria:
+  - bucket/update/network flows fail predictably and recover cleanly
+  - CLI help and parser behavior are stable enough for parity and fixture coverage
+
+### Phase 2D: Installer, Bootstrap, and Live Self-Update Activation
+
+- Goal: define and implement the bootstrap and activation boundary that turns `scoop-rs` into the default root entrypoint on Windows.
+- Deliverables:
+  - installer contract for root resolution, first payload layout, and migration from upstream bootstrap trees
+  - bounded root-entry lifecycle for launcher, shim, or equivalent activation mechanism
+  - live `scoop-rs.exe` self-update activation with recovery and rollback semantics
+  - stable contract for direct execution of versioned engines
+- Out of scope:
+  - broad manifest-shape parity unrelated to activation
+- Exit criteria:
+  - first install, repair, and self-update share one documented activation model
+  - live-engine activation gaps move out of `known-gap` status
 
 ### Phase 3: Performance Hardening and Regression Harness
 
@@ -52,15 +95,26 @@ This is the canonical long-horizon migration plan for turning `scoop-rs` into th
 
 ## Phase Details
 
-### Phase 2 details
+### Phase 2A details
 
-- Use [`THINGS_TO_ADDRESS.md`](/E:/scoop-rs/THINGS_TO_ADDRESS.md) as the source for issue clusters; do not mirror that backlog here.
-- Prefer grouped compatibility passes:
-  - manifest variables
-  - archive/extraction
-  - persist/layout
-  - URL/hash/redirect handling
+- Use [`THINGS_TO_ADDRESS.md`](/E:/scoop-rs/THINGS_TO_ADDRESS.md) as the source for issue clusters tagged to `Phase 2A`.
+- Keep `Phase 2A` focused on inputs, manifests, and resolution rules before widening lifecycle or bootstrap scope.
 - Every closed edge case must either remove a delta or add explicit coverage for why the delta remains.
+
+### Phase 2B details
+
+- Treat install, uninstall, reset, download, persist, shim, shortcut, and environment mutation as one lifecycle surface.
+- Prefer shared typed substrates over command-specific patches whenever a lifecycle edge case appears in more than one command.
+
+### Phase 2C details
+
+- Group network, bucket, update, and CLI robustness work when they share the same failure surface.
+- Prefer one resilient code path for retries, freshness checks, and parser behavior instead of separate ad hoc fixes.
+
+### Phase 2D details
+
+- Keep bootstrap and live-activation design work anchored to [`docs/bootstrap-updater.md`](/E:/scoop-rs/docs/bootstrap-updater.md).
+- Treat root-entry continuity, security surface, and interruption recovery as first-class acceptance criteria.
 
 ### Phase 3 details
 
@@ -80,6 +134,7 @@ This is the canonical long-horizon migration plan for turning `scoop-rs` into th
 - Binary self-update remains versioned, not git-checkout based.
 - Prefer native Rust for OS behavior unless Scoop compatibility explicitly depends on PowerShell semantics.
 - Do not change observable behavior without fixture or parity coverage.
+- Keep machine-consumable outputs compatible; allow human-facing presentation to evolve as a documented scoop-rs contract.
 - Benchmark every command after meaningful changes.
 - Keep documentation boundaries strict:
   - present deltas in `BEHAVIOR_DELTAS.md`
