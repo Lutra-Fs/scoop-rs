@@ -1,6 +1,6 @@
 # scoop-rs
 
-Rust reimplementation of Scoop with a hard target of upstream-compatible inputs and command outcomes, plus materially better performance than the PowerShell implementation.
+Rust reimplementation of Scoop with a hard target of upstream-compatible inputs and command outcomes across real-world Scoop workloads, anchored to the core upstream buckets, plus materially better performance than the PowerShell implementation.
 
 ## Current scope
 
@@ -11,6 +11,7 @@ Rust reimplementation of Scoop with a hard target of upstream-compatible inputs 
 - Theme-safe semantic ANSI colors for CLI status output, with `--color auto|always|never`.
 - Human-facing CLI presentation follows a stable scoop-rs contract and can be more opinionated than upstream where clarity improves.
 - Default install root follows upstream local-root semantics: `$env:USERPROFILE\scoop`.
+- Core compatibility work stays anchored to `<upstream-scoop-root>/buckets/main`, `<upstream-scoop-root>/buckets/nonportable`, and `<upstream-scoop-root>/buckets/extras`, including special-manifest lifecycle flows across `install`, `uninstall`, and `reset`.
 
 ## Near-term priorities
 

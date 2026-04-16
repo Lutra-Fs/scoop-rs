@@ -8,7 +8,9 @@ Read and update this file when implementing or debugging compatibility-sensitive
 Scope:
 
 - Put current deltas here when the difference is already observable today.
-- Treat upstream-compatible inputs and functional outcomes as the default target; record intentional presentation-level differences here when scoop-rs keeps the same command meaning with a clearer or more stable output contract.
+- Treat upstream-compatible inputs and functional outcomes as the baseline for supported workflows, with the strongest compatibility bar anchored to `<upstream-scoop-root>/buckets/main`, `<upstream-scoop-root>/buckets/nonportable`, and `<upstream-scoop-root>/buckets/extras`, including special-manifest lifecycle flows.
+- Record intentional presentation-level differences here when scoop-rs keeps the same command meaning with a clearer or more stable output contract.
+- Record deliberate contract changes and deliberate breaking changes here once they ship.
 - Do not put future work, plans, or general caution items here unless they describe a present user-visible gap.
 - Do not duplicate backlog summaries from `THINGS_TO_ADDRESS.md`.
 

@@ -1,8 +1,8 @@
 # Things to Address
 
-This file is a catch-all for upstream Scoop issues that do not fit cleanly into the behavior delta log, but still matter for scoop-rs parity or for known gaps we should close in the reimplementation.
+This file is a catch-all for upstream Scoop issues that do not fit cleanly into the behavior delta log, but still matter for scoop-rs compatibility, product quality, or known gaps we should close in the reimplementation.
 
-Scope rule: track feature requests, performance improvements, and bug reports only when the report describes a user-visible contract we need to match or a compatibility edge case we need to support. Pure upstream implementation bugs that we do not intend to reproduce do not belong here.
+Scope rule: track feature requests, performance improvements, and bug reports when the report describes a user-visible contract we need to support, a core-corpus workflow we need to harden, or an upstream issue cluster where scoop-rs should establish a clearer contract.
 
 Track the issue number, the expected scoop-rs outcome, and the owning roadmap pass: `Phase 2A`, `Phase 2B`, `Phase 2C`, `Phase 2D`, or `Phase 3`.
 
@@ -11,6 +11,8 @@ Scope:
 - Put future work, unresolved issue clusters, performance targets, and edge cases here.
 - Do not use this file as the canonical source for current behavior. If a difference is already observable in scoop-rs today, record it in `BEHAVIOR_DELTAS.md`.
 - Avoid restating repo overview or benchmark-tool usage here.
+- Many entries here describe long-standing upstream defects or under-maintained workflows. Each item may close through closer upstream parity or through a deliberate scoop-rs contract with the shipped delta recorded in `BEHAVIOR_DELTAS.md`.
+- Core corpus backlog work should keep `<upstream-scoop-root>/buckets/main`, `<upstream-scoop-root>/buckets/nonportable`, and `<upstream-scoop-root>/buckets/extras` install, uninstall, and reset behavior in scope, including special manifests.
 
 ## Phase 2C: Network and download robustness
 
@@ -78,8 +80,8 @@ Scope:
 
 ## Working note
 
-Anything here that changes observable stdout, stderr, exit codes, or filesystem layout should be promoted into `BEHAVIOR_DELTAS.md` once it is implemented or intentionally declined.
+Anything here that changes observable stdout, stderr, exit codes, or filesystem layout should be promoted into `BEHAVIOR_DELTAS.md` once it ships, including deliberate breaking changes.
 
 ## Not Tracking
 
-Pure upstream bugs that do not change the scoop-rs contract are not backlog items for this file. They can still be useful as cautionary examples during implementation, but they should not drive work unless they expose a parity requirement, a manifest edge case, or a performance regression worth fixing in Rust.
+Upstream reports that do not influence the scoop-rs contract, the core manifest corpus, or a meaningful performance target stay outside this file. They still serve as useful cautionary examples during implementation.

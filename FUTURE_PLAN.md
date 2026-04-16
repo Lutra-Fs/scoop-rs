@@ -7,8 +7,9 @@ This is the canonical long-horizon migration plan for turning `scoop-rs` into th
 - `scoop-rs` is the default `scoop` users invoke.
 - Distribution is binary-first and Windows-first.
 - `scoop` self-update uses a versioned binary path, not a git-checkout path.
-- Scoop manifests, layout, accepted command inputs, and functional command semantics are compatible with upstream.
+- Scoop manifests, layout, accepted command inputs, and functional command semantics are highly compatible with upstream for supported workflows, with the strongest compatibility bar anchored to `<upstream-scoop-root>/buckets/main`, `<upstream-scoop-root>/buckets/nonportable`, and `<upstream-scoop-root>/buckets/extras`.
 - Human-facing CLI presentation is a stable scoop-rs contract and may diverge intentionally where clarity or ergonomics improve without changing command meaning.
+- Unresolved upstream defects and under-maintained workflows may resolve to a clearer scoop-rs contract, and each shipped observable delta is documented in `BEHAVIOR_DELTAS.md`.
 - Parity-complete workloads are faster end-to-end than upstream PowerShell Scoop.
 
 ## Current Baseline
@@ -31,6 +32,7 @@ This is the canonical long-horizon migration plan for turning `scoop-rs` into th
   - direct file, UNC, URL, and explicit-source manifest resolution closure for remaining commands
   - deterministic parser and input-validation behavior for manifest-backed commands
   - core manifest compatibility coverage anchored to `<upstream-scoop-root>/buckets/main`, `<upstream-scoop-root>/buckets/nonportable`, and `<upstream-scoop-root>/buckets/extras`
+  - special-manifest fixture coverage that feeds directly into lifecycle validation for `install`, `uninstall`, and `reset`
 - Out of scope:
   - installer/bootstrap activation work
 - Exit criteria:
@@ -43,7 +45,7 @@ This is the canonical long-horizon migration plan for turning `scoop-rs` into th
 - Deliverables:
   - unified download/cache/retry planning across lifecycle commands
   - archive extraction, persist, shim, shortcut, and environment-mutation edge-case coverage
-  - uninstall/reset parity for lifecycle side effects and recovery flows
+  - install, uninstall, and reset parity for lifecycle side effects and recovery flows, including special manifests drawn from the core corpus
   - stable progress and summary output for lifecycle commands
 - Out of scope:
   - root-entry bootstrap and live-engine activation
@@ -102,11 +104,13 @@ This is the canonical long-horizon migration plan for turning `scoop-rs` into th
 - Keep `Phase 2A` focused on inputs, manifests, and resolution rules before widening lifecycle or bootstrap scope.
 - Treat `<upstream-scoop-root>/buckets/main`, `<upstream-scoop-root>/buckets/nonportable`, and `<upstream-scoop-root>/buckets/extras` as the default manifest corpus for compatibility passes unless a task explicitly targets a different bucket set.
 - Every closed edge case must either remove a delta or add explicit coverage for why the delta remains.
+- Prefer explicit scoop-rs contracts that fix recurring upstream defect patterns users benefit from fixing.
 
 ### Phase 2B details
 
 - Treat install, uninstall, reset, download, persist, shim, shortcut, and environment mutation as one lifecycle surface.
 - Prefer shared typed substrates over command-specific patches whenever a lifecycle edge case appears in more than one command.
+- Keep lifecycle fixture growth anchored to special manifests from the core corpus so each pass proves real-world `install`, `uninstall`, and `reset` behavior.
 
 ### Phase 2C details
 
@@ -137,6 +141,7 @@ This is the canonical long-horizon migration plan for turning `scoop-rs` into th
 - Prefer native Rust for OS behavior unless Scoop compatibility explicitly depends on PowerShell semantics.
 - Do not change observable behavior without fixture or parity coverage.
 - Keep machine-consumable outputs compatible; allow human-facing presentation to evolve as a documented scoop-rs contract.
+- Accept deliberate scoop-rs-native contracts when they resolve unresolved upstream defects or long-standing workflow hazards; document each shipped observable delta in `BEHAVIOR_DELTAS.md`.
 - Benchmark every command after meaningful changes.
 - Keep documentation boundaries strict:
   - present deltas in `BEHAVIOR_DELTAS.md`
